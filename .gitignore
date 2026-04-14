@@ -1,0 +1,28 @@
+# MATLAB
+*.asv
+*.m~
+*.autosave
+*.p
+*.mex*
+.matlab
+slprj/
+
+# LaTeX
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Data
+data/raw/
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
