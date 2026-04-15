@@ -17,6 +17,8 @@ slprj/
 *.synctex.gz
 *.fls
 *.fdb_latexmk
+*.run.xml
+*.synctex(busy)
 
 # Data
 data/raw/
