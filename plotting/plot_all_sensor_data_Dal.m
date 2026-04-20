@@ -47,7 +47,7 @@ alpha = 0.12;
 
 % Plot as multi-panel figure
 f = figure;clf
-tiledlayout(2,1,'TileSpacing','tight','padding','tight')
+tiledlayout(3,1,'TileSpacing','tight','padding','tight')
 
 ind_start = 10;
 ind_end = height(TT_5min) - 20;
@@ -91,6 +91,13 @@ h6 = patch(patch_x, patch_y,'w','FaceAlpha', alpha, 'EdgeColor', 'none');
 h6.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h6.FaceColor = dal_sample_clr;
 plot(TT_5min.datetime_local, TT_5min.dal_sample_ppm,'-','color',dal_sample_clr,'DisplayName','eosFD Sample')
+
+xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+
 ylabel('CO_2 Concentration (ppm)')
 
 lgd = legend('show','location','north');
@@ -99,12 +106,29 @@ lgd.NumColumns = 3;
 xlim([TT_5min.datetime_local(ind_start) TT_5min.datetime_local(ind_end)])
 ylim([350 600])
 
+nexttile(2); grid on; box on
+yyaxis left
+plot(TT_5min.datetime_local,TT_5min.dal_ref_T,'DisplayName','Reference T')
+hold on
+plot(TT_5min.datetime_local,TT_5min.dal_sample_T,'g','DisplayName','Sample T')
+
+yyaxis right
+% plot(TT_5min.datetime_local,TT_5min.)
+legend('show')
+xlim([TT_5min.datetime_local(ind_start) TT_5min.datetime_local(ind_end)])
+grid on
+xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+
 %--Plot fluxes-------------------------------------------------------------
 dal_flux_err = 0.2*ones(height(TT_5min),1);  % (umol m-2 s-1)
 
 valid = ~isnan(corrected_flux_dal);
 
-nexttile(2); grid on; box on
+nexttile(3); grid on; box on
 yline(0,'Color','k','LineWidth',2,'HandleVisibility','off')
 hold on
 
@@ -127,6 +151,13 @@ h10 = patch(patch_x,patch_y,'w','FaceAlpha',alpha,'EdgeColor','none');
 h10.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h10.FaceColor = dal_flux_clr;
 plot(TT_5min.datetime_local,corrected_flux_dal,'-','color',dal_flux_clr,'DisplayName','eosFD Corrected Flux')
+
+xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+
 ylabel('Flux (\mumol m^{-2} s^{-1})')
 
 lgd = legend('show','location','north');
@@ -137,6 +168,7 @@ ylim([-0.3 0.3])
 xlabel('Local Time')
 
 set(f,"Position",[1 1 1105 700])
+
 
 %% -------------------------------------------------------------------------
 % Save plot - make sure to change folder and label!!

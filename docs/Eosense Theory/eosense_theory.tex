@@ -407,7 +407,7 @@ In practice, electrical tape can be used to cover either the side or bottom memb
 \subsubsection{Comparison to Eosense Calibration}
 This calibration procedure differs in a key way from Eosense's. Their mass balance equation (Eq. \ref{eq:1}) implicitly assumes that the flux through the bottom membrane ($f_c$) is the same as the flux directly from the sample surface ($f_s$)---i.e., they ignore the collar flux---and they calibrate for $G$, which is the gas transfer velocity of the \textit{side membrane} (second term on the right in Eq. \ref{eq:1}). They also assume that $G$ is the same for the side and bottom membranes, which may not be true given that the path length from the side membrane to the NDIR sensor is not exactly the same as that from the bottom membrane to the sensor (Fig. \ref{fig:flow-paths}).
 
-This can be illustrated as follows. From the Eqs. \ref{eq:3} and \ref{eq:5}, the Sample and Reference mass balances are, respectively:
+This can be illustrated as follows. From  Eqs. \ref{eq:3} and \ref{eq:5}, the Sample and Reference mass balances are, respectively:
 \begin{equation*}
 	V_m \frac{\partial C_s}{\partial t} = S_c f_c - S_a f_a
 \end{equation*}
@@ -417,16 +417,21 @@ This can be illustrated as follows. From the Eqs. \ref{eq:3} and \ref{eq:5}, the
 
 Eosense assumes steady-state conditions: $\dfrac{\partial C_s}{\partial t} = \dfrac{\partial C_r}{\partial t} = 0$.
 
-The respective Sample and Reference mass balances become:
+The Sample mass balance becomes
 \begin{equation*}
-	S_c k_c(C_s - C_c) = S_a k_a (C_s - C_a)
+	S_c f_c = S_a f_a
 \end{equation*}
+and similarly for the Reference mass balance:
 \begin{gather*}
 	S_a k_a(C_r - C_a) = 0 \\
 	\implies C_r = C_a
 \end{gather*}
 
 Here, Eosense assumes that $f_c = f_s$, and prescribes this flux during their calibration. Given these assumptions, and since $S_a = S_c$, the Sample mass balance becomes:
+\begin{equation*}
+	f_s = f_a = k_a(C_s - C_r)
+\end{equation*}
+But in steady state, $C_a = C_r$; therefore,
 \begin{equation*}
 	f_s = k_a(C_s - C_r)
 \end{equation*}

@@ -28,14 +28,14 @@ datFile = dir(fullfile(rawPath,'*.dat'));
 
 % Main flux data (.dat)
 dat = readtable(fullfile(rawPath,[filename,'.dat']));
-varnames = ["datetime_utc","datetime_local","n_pairs","addr_ref","T_ref","addr_sample","flux_sample","T_sample","max_status","time_code"];
-varunits = ["","","","","degC","","umol m-2 s-1","degC","",""];
-% varnames = ["datetime_utc","datetime_local","n_pairs","addr_ref","misc","T_ref","addr_sample","flux_sample","T_sample","max_status","time_code"];
-% varunits = ["","","","","","degC","","umol m-2 s-1","degC","",""];
+% varnames = ["datetime_utc","datetime_local","n_pairs","addr_ref","T_ref","addr_sample","flux_sample","T_sample","max_status","time_code"];
+% varunits = ["","","","","degC","","umol m-2 s-1","degC","",""];
+varnames = ["datetime_utc","datetime_local","n_pairs","addr_ref","misc","T_ref","addr_sample","flux_sample","T_sample","max_status","time_code"];
+varunits = ["","","","","","degC","","umol m-2 s-1","degC","",""];
 dat.Properties.VariableNames = varnames;
 dat.Properties.VariableUnits = varunits;
 dat.datetime_utc = datetime(dat.datetime_utc,'InputFormat','yyyy/MM/dd HH:mm:ss','TimeZone','UTC');
-dat.datetime_local = datetime(dat.datetime_local,'InputFormat','yyyy/MM/dd HH:mm:ss','Timezone','local');
+dat.datetime_local = datetime(dat.datetime_local,'InputFormat','yyyy/MM/dd HH:mm:ss','Timezone','America/Halifax');
 
 % Raw concentration data (.raw)
 raw = readtable(fullfile(rawPath,[filename,'.RAW']),'FileType','text');
@@ -44,7 +44,7 @@ varunits = ["","","","","ppm","degC","","ppm","degC"];
 raw.Properties.VariableNames = varnames;
 raw.Properties.VariableUnits = varunits;
 raw.datetime_utc = datetime(raw.datetime_utc,'InputFormat','yyyy/MM/dd HH:mm:ss','TimeZone','UTC');
-raw.datetime_local = datetime(raw.datetime_local,'InputFormat','yyyy/MM/dd HH:mm:ss','Timezone','local');
+raw.datetime_local = datetime(raw.datetime_local,'InputFormat','yyyy/MM/dd HH:mm:ss','Timezone','America/Halifax');
 
 % Auxiliary data (.aux)
 aux = readtable(fullfile(rawPath,[filename,'.AUX']),'FileType','text');
@@ -54,7 +54,7 @@ varunits = ["","","","","","degC","kPa","%","decimal_deg","decimal_deg","m","","
 aux.Properties.VariableNames = varnames;
 aux.Properties.VariableUnits = varunits;
 aux.datetime_utc = datetime(aux.datetime_utc,'InputFormat','yyyy/MM/dd HH:mm:ss','TimeZone','UTC');
-aux.datetime_local = datetime(aux.datetime_local,'InputFormat','yyyy/MM/dd HH:mm:ss','Timezone','local');
+aux.datetime_local = datetime(aux.datetime_local,'InputFormat','yyyy/MM/dd HH:mm:ss','Timezone','America/Halifax');
 
 % Convert to timetables
 dat = table2timetable(dat);

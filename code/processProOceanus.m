@@ -37,7 +37,7 @@ rawDat.Properties.VariableNames = varnames;
 rawDat.Properties.VariableUnits = varunits;
 
 rawDat.phase = string(rawDat.phase);
-datetimeVector = datetime(rawDat.year,rawDat.month,rawDat.day,rawDat.hour,rawDat.minute,rawDat.second,'TimeZone','local');
+datetimeVector = datetime(rawDat.year,rawDat.month,rawDat.day,rawDat.hour,rawDat.minute,rawDat.second,'TimeZone','America/Halifax');
 % datetimeVector = datetime(rawDat.year,rawDat.month,rawDat.day,rawDat.hour,rawDat.minute,rawDat.second,'TimeZone','America/New_York');
 
 proDat.all = table(datetimeVector,rawDat.phase,rawDat.corr_CO2_ppm,rawDat.P,'VariableNames',{'datetime_local','phase','conc_ppm','P_mbar'});
@@ -110,8 +110,8 @@ numPeriods = length(startIdx);
 results = table('Size', [numPeriods,4], 'VariableNames', {'datetime_local', 'phase', 'mean_conc_ppm', 'mean_P_mbar'},...
     'VariableTypes', {'datetime', 'string', 'double', 'double'});
 results = table2timetable(results);
-% results.datetime_local.TimeZone = 'local';
-results.datetime_local.TimeZone = 'America/New_York';
+results.datetime_local.TimeZone = 'America/Halifax';
+% results.datetime_local.TimeZone = 'America/New_York';
 
 for i = 1:numPeriods-1
     % Get the sub-timetable for the current continuous phase period
