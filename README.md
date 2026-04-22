@@ -5,9 +5,9 @@ This repository contains documentation related to flux chamber development, alon
 - `docs/` - Project documentation and theory
 - `data/` - Processed datasets (raw data excluded)
 - `code/` - Reusable MATLAB functions and methods
-- `analysis/` - Analysis scripts and workflows
-- `plotting/` - Scripts for figure generation
-- `external/` - Scripts for other sources
+- `analysis/` - MATLAB analysis scripts and workflows
+- `plotting/` - MATLAB scripts for figure generation
+- `external/` - MATLAB scripts from other sources
 
 
 ## Data Acquisition
