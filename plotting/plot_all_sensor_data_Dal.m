@@ -35,26 +35,26 @@ dal_eos_err = 40*ones(height(TT_5min),1);             % ppm
 miniATM_err = 0.03*2000*ones(height(TT_5min),1);     % ppm
 
 % Define colors
-% dal_ref_clr = '#4d004b';
 dal_ref_clr = '#8A2BE2';
-% dal_sample_clr = '#8c6bb1';
 dal_sample_clr = '#FF00FF';
 dal_flux_clr = '#8B008B';
 miniATM_air_clr = '#41b6c4';
 miniATM_water_clr = '#0000CD';
 
+lblsize = 18;
+lgdsize = 16;
+
 alpha = 0.12;
 
 % Plot as multi-panel figure
 f = figure;clf
-tiledlayout(3,1,'TileSpacing','tight','padding','tight')
+tiledlayout(2,1,'TileSpacing','tight','padding','tight')
 
 ind_start = 10;
 ind_end = height(TT_5min) - 20;
 
 %--Plot CO2 concentrations-------------------------------------------------
-nexttile(1); grid on; box on
-
+ax1 = nexttile(1); grid on; box on
 y_upper = TT_5min.miniATM_air_ppm + miniATM_err;
 y_lower = TT_5min.miniATM_air_ppm - miniATM_err;
 patch_x = [TT_5min.datetime_local; flipud(TT_5min.datetime_local)];
@@ -63,7 +63,8 @@ h7 = patch(patch_x, patch_y,'w','FaceAlpha', alpha, 'EdgeColor', 'none');
 h7.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h7.FaceColor = miniATM_air_clr;
 hold on
-plot(TT_5min.datetime_local, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Mini ATM - Air Phase')
+% plot(TT_5min.datetime_local, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Mini ATM - Air')
+plot(TT_5min.datetime_local, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Air')
 
 y_upper = TT_5min.miniATM_water_ppm + miniATM_err;
 y_lower = TT_5min.miniATM_water_ppm - miniATM_err;
@@ -72,7 +73,8 @@ patch_y = [y_lower; flipud(y_upper)];
 h8 = patch(patch_x, patch_y,'w','FaceAlpha', alpha, 'EdgeColor', 'none');
 h8.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h8.FaceColor = miniATM_water_clr;
-plot(TT_5min.datetime_local, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Mini ATM - Water Phase')
+% plot(TT_5min.datetime_local, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Mini ATM - Water')
+plot(TT_5min.datetime_local, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Water')
 
 y_upper = TT_5min.dal_ref_ppm + dal_eos_err;
 y_lower = TT_5min.dal_ref_ppm - dal_eos_err;
@@ -92,43 +94,46 @@ h6.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h6.FaceColor = dal_sample_clr;
 plot(TT_5min.datetime_local, TT_5min.dal_sample_ppm,'-','color',dal_sample_clr,'DisplayName','eosFD Sample')
 
-xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'--','Sunrise','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'--','Sunset','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'--','Sunrise','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'--','Sunset','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'--','Sunrise','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
 
-ylabel('CO_2 Concentration (ppm)')
+xticklabels(ax1,{})
+ax1.FontSize = lblsize;
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
 
 lgd = legend('show','location','north');
-lgd.NumColumns = 3;
+lgd.NumColumns = 2;
+lgd.FontSize = lgdsize;
 
 xlim([TT_5min.datetime_local(ind_start) TT_5min.datetime_local(ind_end)])
 ylim([350 600])
 
-nexttile(2); grid on; box on
-yyaxis left
-plot(TT_5min.datetime_local,TT_5min.dal_ref_T,'DisplayName','Reference T')
-hold on
-plot(TT_5min.datetime_local,TT_5min.dal_sample_T,'g','DisplayName','Sample T')
+% nexttile(2); grid on; box on
+% yyaxis left
+% plot(TT_5min.datetime_local,TT_5min.dal_ref_T,'DisplayName','Reference T')
+% hold on
+% plot(TT_5min.datetime_local,TT_5min.dal_sample_T,'g','DisplayName','Sample T')
 
-yyaxis right
-% plot(TT_5min.datetime_local,TT_5min.)
-legend('show')
-xlim([TT_5min.datetime_local(ind_start) TT_5min.datetime_local(ind_end)])
-grid on
-xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+% yyaxis right
+% % plot(TT_5min.datetime_local,TT_5min.)
+% legend('show')
+% xlim([TT_5min.datetime_local(ind_start) TT_5min.datetime_local(ind_end)])
+% grid on
+% xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+% xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+% xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+% xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+% xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
 
 %--Plot fluxes-------------------------------------------------------------
 dal_flux_err = 0.2*ones(height(TT_5min),1);  % (umol m-2 s-1)
 
 valid = ~isnan(corrected_flux_dal);
 
-nexttile(3); grid on; box on
+ax2 = nexttile(2); grid on; box on
 yline(0,'Color','k','LineWidth',2,'HandleVisibility','off')
 hold on
 
@@ -152,23 +157,24 @@ h10.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h10.FaceColor = dal_flux_clr;
 plot(TT_5min.datetime_local,corrected_flux_dal,'-','color',dal_flux_clr,'DisplayName','eosFD Corrected Flux')
 
-xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
-xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'handlevisibility','off')
+xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
 
-ylabel('Flux (\mumol m^{-2} s^{-1})')
+ylabel('Flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
 
 lgd = legend('show','location','north');
-lgd.NumColumns = 2;
+lgd.FontSize = lgdsize;
 
 xlim([TT_5min.datetime_local(ind_start) TT_5min.datetime_local(ind_end)])
-ylim([-0.3 0.3])
-xlabel('Local Time')
+% ylim([-0.3 0.3])
+ylim([-0.45 0.25])
+ax2.FontSize = lblsize;
+xlabel('Local Time','FontSize',lblsize)
 
-set(f,"Position",[1 1 1105 700])
-
+set(f,"Position",[3 929 1533 700])
 
 %% -------------------------------------------------------------------------
 % Save plot - make sure to change folder and label!!

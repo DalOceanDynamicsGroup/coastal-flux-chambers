@@ -14,9 +14,7 @@ load('allDat.mat')
 % Define initial conditions manually
 % -------------------------------------------------------------------------
 % Define plot colors
-% dal_ref_clr = '#4d004b';
 dal_ref_clr = '#8A2BE2';
-% dal_sample_clr = '#8c6bb1';
 dal_sample_clr = '#FF00FF';
 dal_flux_clr = '#8B008B';
 miniATM_air_clr = '#41b6c4';
@@ -39,15 +37,15 @@ else
     disp('No data point was clicked.');
 end
 
-% % Compare Ca (Pro-Oceanus) and Cr (Dal Eosense Reference)
-% figure,clf
-% plot(TT_5min.TIME, TT_5min.dal_ppm_ref, '.', 'color', dal_ref_clr, 'DisplayName', 'Dal Eosense Reference')
-% hold on
-% plot(TT_5min.TIME, TT_5min.dal_ppm_air, '.', 'color', dal_pro_clr, 'DisplayName', 'Pro-Oceanus Mini ATM - Air Phase')
-% legend('show','location','best')
-% xlabel('Local Time')
-% ylabel('xCO_2 (ppm)')
-% grid on
+% Compare Ca (Pro-Oceanus) and Cr (Dal Eosense Reference)
+figure,clf
+plot(TT_5min.TIME, TT_5min.dal_ref_ppm, '.', 'color', dal_ref_clr, 'DisplayName', 'Dal Eosense Reference')
+hold on
+plot(TT_5min.TIME, TT_5min.miniATM_air_ppm, '.', 'color', miniATM_air_clr, 'DisplayName', 'Pro-Oceanus Mini ATM - Air Phase')
+legend('show','location','best')
+xlabel('Local Time')
+ylabel('CO_2 Concentration (ppm)')
+grid on
 
 % Initial conditions
 Cw0 = TT_5min.miniATM_water_ppm(ind_t0);  % (ppm); initial water concentration
@@ -60,14 +58,12 @@ Cr0 = TT_5min.dal_ref_ppm(ind_t0);        % (ppm); initial Reference concentrati
 % 1) Calculate kw over entire time series to identify the pseudo-SS window
 ka = 3.689E-4; % (m s-1); my average value for ref/sample side membrane k
 kc = 7.532E-5; % (m s-1); my value for bottom membrane k
-% ka = 3.01E-4; % (m s-1); provided by Eosense
-% kc = 3.01E-4; % (m s-1); provided by Eosense
 Cw = TT_5min.miniATM_water_ppm;
 Cs = TT_5min.dal_samplecorr_ppm;
 Cr = TT_5min.dal_ref_ppm;
 
 kw_dynamic = ka ./ ((Cw - Cs) ./ (Cs - Cr) - ka/kc); % (m s-1)
-%%
+
 figure,clf
 bl = [0 0 0];
 or = [0.8500 0.3250 0.0980];
@@ -77,8 +73,8 @@ yyaxis left
 plot(TT_5min.TIME, TT_5min.dal_ref_ppm,'-','color',dal_ref_clr,'DisplayName','Dal Eosense Reference')
 hold on
 plot(TT_5min.TIME, TT_5min.dal_samplecorr_ppm,'-','color',dal_sample_clr,'DisplayName','Dal Eosense Sample (corrected)')
-plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-o','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM - Air Phase')
-plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-^','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Mini ATM - Water Phase')
+plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-o','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM - Air')
+plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-^','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Mini ATM - Water')
 % plot(TT_5min.TIME, Cc, '.', 'DisplayName', 'C_c')
 ylabel('CO_2 Concentration (ppm)')
 grid on; box on
@@ -126,7 +122,7 @@ dCwdt = gradient(Cw, dt); % (ppm s-1); gradient function computes central differ
 flux_PO = -H * dCwdt;     % (ppm m s-1)
 
 % Calculate kw over entire time series for comparison
-Ca = TT_5min.miniATM_air_ppm;    % (ppm); use Pro-Oceanus atmosphere - or use Dal Reference instead?
+Ca = TT_5min.miniATM_air_ppm;    % (ppm); use Pro-Oceanus atmosphere
 kw_PO_dynamic = flux_PO ./ (Cw - Ca); % (m s-1)
 
 % Calculate kw during pseudo-SS window
@@ -230,26 +226,39 @@ grid on
 R = 8.314; % (J mol-1 K-1)
 Tair = TT_5min.air_T + 273.15; % (K)
 
-fw_umol = fw .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);
+fw_umol = fw .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);           % Flux beneath chamber
 
-flux_PO_umol = flux_PO .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);
+flux_PO_umol = flux_PO .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair); % Flux from PO water-inventory method
 
-fwt_PO_umol = fwt_PO .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);
+fwt_PO_umol = fwt_PO .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);   % Flux from solely PO measurements
 
-fwt_umol = fwt .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);
+fwt_umol = fwt .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);         % True flux
 
-flux_PO_umol_smooth = smoothdata(flux_PO_umol,"movmean",4);
+flux_PO_umol_smooth = smoothdata(flux_PO_umol,"movmean",4);            % Smoothed PO water-inventory flux
 
-figure,clc 
+lblsize = 18;
+lgdsize = 16;
+
+f = figure;clc 
 yline(0,'k','LineWidth',2,'HandleVisibility','off','Layer','bottom')
 hold on
 % plot(TT_5min.TIME, flux_PO_umol, '.-', 'Color', miniATM_water_clr, 'DisplayName', 'Pro-Oceanus water-inventory flux')
 plot(TT_5min.TIME, flux_PO_umol_smooth, '.-', 'Color', miniATM_water_clr, 'DisplayName', 'Pro-Oceanus water-inventory flux = $-h\cdot \partial C_w / \partial t$')
+% plot(TT_5min.TIME, fwt_PO_umol, '.-', 'Color', miniATM_water_clr, 'DisplayName', 'Flux from Pro-Oceanus = $k_{w,PO}(C_w - C_a)$')
 plot(TT_5min.TIME, fw_umol, '.-', 'Color', dal_flux_clr, 'DisplayName', 'Flux beneath chamber = $k_w(C_w - C_c)$')
 % plot(TT_5min.TIME, fwt_umol, '.-', 'DisplayName', '"True" flux')
 xlabel('Local Time')
-ylabel('f_w (\mumol m^{-2} s^{-1})')
-legend('show','location','best','interpreter','latex')
-% legend('show','location','best')
+ylabel('Air-water flux (\mumol m^{-2} s^{-1})')
+ax = gca;
+ax.FontSize = lblsize;
+
+lgd = legend('show','location','south','interpreter','latex');
+lgd.FontSize = lgdsize;
+
 grid on
 box on
+
+set(f,"Position",[3 929 1533 700])
+%%
+cd('G:\My Drive\Dal and MIT\Lab Experiments\Figures\MIT\Expt - Large CO2 Pulse')
+exportgraphics(gcf,'large_CO2pulse_flux-comparison_V2.png','Padding','tight')
