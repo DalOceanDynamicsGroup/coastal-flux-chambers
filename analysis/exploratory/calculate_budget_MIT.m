@@ -1,3 +1,14 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% calculate_budget_MIT.m
+% This script calculates the budgets from the eosFDs and Pro-Oceanus Mini
+% ATM for the CO2 pulse experiments with the MIT experimental setup.
+%
+% AUTHOR: Emily Chua
+%
+% DATE:
+% First created: 3/26/26
+% Last updated:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Make sure to change "INPUT"
 
 clear;close all;clc
@@ -11,7 +22,7 @@ selpath = uigetdir(start_path,dialog_title);
 [~,expt_name] = fileparts(selpath);
 cd([selpath,'\merged'])
 load('allDat.mat')
-
+%%
 % -------------------------------------------------------------------------
 % Calculate eosFD flux
 % -------------------------------------------------------------------------
@@ -72,7 +83,7 @@ miniATM_air_clr = '#41b6c4';
 miniATM_water_clr = '#0000CD';
 
 % -------------------------------------------------------------------------
-% Budget calculations
+% Calculate area-integrated budget (umol s-1)
 % -------------------------------------------------------------------------
 % 1. Convert Pro-Oceanus water and air concentrations (ppm) --> pCO2 (uatm)
 pCO2w = TT_5min.miniATM_water_ppm .* TT_5min.miniATM_water_Pmbar / 1013.25;  % (uatm)
@@ -135,7 +146,7 @@ set(fig1,"Position",[250 200 1151 587])
 % ylim([-0.3 0.05])
 % ylim([-0.15 0.05])
 % xlim([TT_5min.TIME(17) TT_5min.TIME(end)])
-%%
+
 %--Option to save plot-----------------------------------------------------
 option = questdlg('Save plot?','Save plot','Yes','No','Yes');
 switch option
@@ -154,7 +165,7 @@ end
 
 %%
 % -------------------------------------------------------------------------
-% Budget estimate: Total molar change
+% Calculate total molar change (umol)
 % -------------------------------------------------------------------------
 % Dal Eosense
 % 1. Convert timetable to usable vectors for integration

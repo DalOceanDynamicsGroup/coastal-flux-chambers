@@ -1,3 +1,14 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% compare_fluxes.m
+% This script calculates kw and the fluxes estimated independently from the
+% eosFDs and Pro-Oceanus Mini ATM.
+%
+% AUTHOR: Emily Chua
+%
+% DATE:
+% First created: 4/2026
+% Last updated:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear; close all; clc
 
 % -------------------------------------------------------------------------
@@ -10,9 +21,6 @@ selpath = uigetdir(start_path,dialog_title);
 cd([selpath,'\merged'])
 load('allDat.mat')
 
-% -------------------------------------------------------------------------
-% Define initial conditions manually
-% -------------------------------------------------------------------------
 % Define plot colors
 dal_ref_clr = '#8A2BE2';
 dal_sample_clr = '#FF00FF';
@@ -20,37 +28,18 @@ dal_flux_clr = '#8B008B';
 miniATM_air_clr = '#41b6c4';
 miniATM_water_clr = '#0000CD';
 
-fig = figure;clf
-plot(TT_5min.TIME, TT_5min.dal_sample_ppm, '.', 'color', dal_sample_clr, 'DisplayName', 'Dal Eosense Sample')
-
-dcm_obj = datacursormode(fig);
-datacursormode on;
-disp([newline 'Click on a data point in the plot, then press "Enter" in the Command Window']);
-pause;
-info_struct = getCursorInfo(dcm_obj);
-if isfield(info_struct, 'DataIndex')
-    ind_t0 = info_struct.DataIndex;
-    cursor_position = info_struct.Position;
-    disp(['Clicked data index: ', num2str(ind_t0)]);
-    disp(['Clicked y-value: ', num2str(cursor_position(2),3), ' ppm']);
-else
-    disp('No data point was clicked.');
-end
-
 % Compare Ca (Pro-Oceanus) and Cr (Dal Eosense Reference)
 figure,clf
 plot(TT_5min.TIME, TT_5min.dal_ref_ppm, '.', 'color', dal_ref_clr, 'DisplayName', 'Dal Eosense Reference')
 hold on
-plot(TT_5min.TIME, TT_5min.miniATM_air_ppm, '.', 'color', miniATM_air_clr, 'DisplayName', 'Pro-Oceanus Mini ATM - Air Phase')
+plot(TT_5min.TIME, TT_5min.miniATM_air_ppm, '.', 'color', miniATM_air_clr, 'DisplayName', 'Mini ATM - Air')
 legend('show','location','best')
 xlabel('Local Time')
 ylabel('CO_2 Concentration (ppm)')
 grid on
 
-% Initial conditions
-Cw0 = TT_5min.miniATM_water_ppm(ind_t0);  % (ppm); initial water concentration
-Cs0 = TT_5min.dal_samplecorr_ppm(ind_t0); % (ppm); initial Sample concentration
-Cr0 = TT_5min.dal_ref_ppm(ind_t0);        % (ppm); initial Reference concentration
+disp('Press enter to continue')
+pause
 
 % -------------------------------------------------------------------------
 % Calculate kw from Eq. 22
@@ -73,8 +62,8 @@ yyaxis left
 plot(TT_5min.TIME, TT_5min.dal_ref_ppm,'-','color',dal_ref_clr,'DisplayName','Dal Eosense Reference')
 hold on
 plot(TT_5min.TIME, TT_5min.dal_samplecorr_ppm,'-','color',dal_sample_clr,'DisplayName','Dal Eosense Sample (corrected)')
-plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-o','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM - Air')
-plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-^','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Mini ATM - Water')
+plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-o','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Mini ATM - Air')
+plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-^','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Mini ATM - Water')
 % plot(TT_5min.TIME, Cc, '.', 'DisplayName', 'C_c')
 ylabel('CO_2 Concentration (ppm)')
 grid on; box on
@@ -89,7 +78,10 @@ xlabel('Local Time')
 ylabel('k_w (m s^{-1})')
 ylim([-1E-4 1E-4])
 grid on
-%%
+
+disp('Press enter to continue')
+pause 
+
 % 2) Manually define pseudo-SS conditions (x-range to average over)
 % ---2-h window---
 % ind_start = 24;
@@ -115,7 +107,7 @@ kw = ka ./ ((Cw_ss - Cs_ss) ./ (Cs_ss - Cr_ss) - ka/kc); % (m s-1)
 % -------------------------------------------------------------------------
 % Calculate flux and kw from Pro-Oceanus only
 H = 0.115;  % (m); height of water in box
-dt = seconds(TT_5min.TIME(2) - TT_5min.TIME(1));    % Assumes uniform spacing
+dt = seconds(TT_5min.TIME(2) - TT_5min.TIME(1)); % TT_5min has uniform spacing by definition
 
 % Calculate flux from water-side measurements
 dCwdt = gradient(Cw, dt); % (ppm s-1); gradient function computes central differences for interior points
@@ -157,6 +149,29 @@ ylim([-1E-4 1E-4])
 % -------------------------------------------------------------------------
 % Calculate Cc(t) using Eq. 18
 % -------------------------------------------------------------------------
+% Define initial conditions manually
+fig = figure;clf
+plot(TT_5min.TIME, TT_5min.dal_sample_ppm, '.', 'color', dal_sample_clr, 'DisplayName', 'Dal Eosense Sample')
+
+dcm_obj = datacursormode(fig);
+datacursormode on;
+disp([newline 'Click on a data point in the plot, then press "Enter" in the Command Window']);
+pause;
+info_struct = getCursorInfo(dcm_obj);
+if isfield(info_struct, 'DataIndex')
+    ind_t0 = info_struct.DataIndex;
+    cursor_position = info_struct.Position;
+    disp(['Clicked data index: ', num2str(ind_t0)]);
+    disp(['Clicked y-value: ', num2str(cursor_position(2),3), ' ppm']);
+else
+    disp('No data point was clicked.');
+end
+
+% Initial conditions
+Cw0 = TT_5min.miniATM_water_ppm(ind_t0);  % (ppm); initial water concentration
+Cs0 = TT_5min.dal_samplecorr_ppm(ind_t0); % (ppm); initial Sample concentration
+Cr0 = TT_5min.dal_ref_ppm(ind_t0);        % (ppm); initial Reference concentration
+
 % Known values
 S = 804 / 10^6; % (m2); membrane surface area
 Vc = pi * 0.025^2 * 0.01; % (m3); volume of collar, assuming water level is 1.5 cm from bottom
@@ -170,27 +185,23 @@ tau_chamber = 1 / (kappa_w + kappa_c); % (s); estimate of chamber time constant
 A = Ca - (kappa_w*Cw0 + kappa_c*Cs0) ./ (kappa_w + kappa_c);
 Cc = A .* exp(-(kappa_w + kappa_c) .* t) + (kappa_w .* Cw + kappa_c .* Cs) ./ (kappa_w + kappa_c); % (ppm)
 
-% --Calculate Cc(t) using kw from PO data-------------
-kappa_w = S*kw_PO/Vc; % (s-1); rate constant for enclosed water
-A = Ca - (kappa_w*Cw0 + kappa_c*Cs0) ./ (kappa_w + kappa_c);
-Cc_PO = A .* exp(-(kappa_w + kappa_c) .* t) + (kappa_w .* Cw + kappa_c .* Cs) ./ (kappa_w + kappa_c); % (ppm)
-
 % Plot result
 cd('G:\My Drive\Dal and MIT\Lab Experiments\Figures\MIT')
 figure,clf
 plot(TT_5min.TIME, TT_5min.dal_samplecorr_ppm, '.', 'color', dal_sample_clr, 'DisplayName', 'Dal Eosense Sample (corrected)')
 hold on
 plot(TT_5min.TIME, Cc, '.', 'DisplayName', 'Calculated C_c(t) using k_w from Eq. 22')
-plot(TT_5min.TIME, Cc_PO, '.', 'color', miniATM_water_clr, 'DisplayName', 'Calculated C_c(t) using k_w from PO')
 legend('show','location','best')
 xlabel('Local Time')
 ylabel('CO_2 Concentration (ppm)')
 grid on
 
+disp('Press enter to continue to next plot')
+pause
+
 figure,clf
-plot(TT_5min.dal_sample_ppm, Cc_PO, '.', 'color', miniATM_water_clr, 'DisplayName', 'Calculated C_c(t) using k_w from PO')
+plot(TT_5min.dal_sample_ppm, Cc, '.', 'Color', or, 'DisplayName', 'Calculated C_c(t) using k_w from Eq. 22')
 hold on
-plot(TT_5min.dal_sample_ppm, Cc, '.', 'DisplayName', 'Calculated C_c(t) using k_w from Eq. 22')
 currentLimits = [xlim ylim];
 minLimit = min(currentLimits);
 maxLimit = max(currentLimits);
@@ -201,40 +212,52 @@ ylabel('Calculated C_c(t) (ppm)')
 axis square
 
 %% Compare fluxes (all in ppm m s-1)
-fw = kw * (Cw - Cc); % Flux beneath chamber (Eq. 19)
 
-flux_PO_smooth = smoothdata(flux_PO,"movmean",5); % Smoothed flux from PO C_w data only
+% Flux through bottom membrane
+% fc = kc * (Cc - Cs);
+Vm = 16.7/10^6; % (m3); volume of measuring chamber
+fc = Vm/S * (gradient(Cs, dt) - gradient(Cr, dt)) + ka * (Cs - Cr); 
 
-fwt_PO = kw_PO * (Cw - Ca); % True flux (Eq. 23), using k_w calculated from PO
+% Flux beneath chamber (Eq. 19)
+fw = kw * (Cw - Cc);                                                
 
-fwt = kw * (Cw - Ca); % True flux (Eq. 23), using k_w calculated from Eq. 22
+% Smoothed flux from PO water-inventory method
+flux_PO_smooth = smoothdata(flux_PO,"movmean",5);
+
+% True flux (Eq. 24)
+fwt = kw * (Cw - Cr);                                               
 
 figure,clc 
 yline(0,'k','LineWidth',2,'HandleVisibility','off','Layer','bottom')
 hold on
-plot(TT_5min.TIME, flux_PO, '.-', 'Color', miniATM_water_clr, 'DisplayName', 'Calculated from Pro-Oceanus $\partial C_w / \partial t$ only')
-% plot(TT_5min.TIME, flux_PO_smooth, '.-', 'Color', miniATM_water_clr, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$')
-plot(TT_5min.TIME, fw, '.-', 'DisplayName', '$f_w$ (Eq. 19; flux beneath chamber)')
-plot(TT_5min.TIME, fwt_PO, '.-', 'DisplayName', '$f_w^\dagger$ (Eq. 23 using $k_w$ from PO)')
-plot(TT_5min.TIME, fwt, '.-', 'DisplayName', '$f_w^\dagger$ (Eq. 23 using $k_w$ from Eq. 22)')
+plot(TT_5min.TIME, fc, '.-', 'Color', dal_flux_clr, 'DisplayName', '$f_c$ (Eq. 10; flux through bottom membrane)')
+plot(TT_5min.TIME, fw, '.-', 'Color', rgb('OrangeRed'), 'DisplayName', '$f_w$ (Eq. 19; flux beneath chamber)')
+plot(TT_5min.TIME, fwt, '.-', 'Color', rgb('Goldenrod'), 'DisplayName', '$f_w^\dagger$ (Eq. 24)')
+plot(TT_5min.TIME, flux_PO_smooth, '.-', 'Color', miniATM_water_clr, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$')
 xlabel('Local Time')
 ylabel('f_w (ppm m s^{-1})')
 legend('show','location','best','interpreter','latex')
 grid on
 
 %% Convert fluxes in ppm m s-1 --> umol m-2 s-1
-R = 8.314; % (J mol-1 K-1)
-Tair = TT_5min.air_T + 273.15; % (K)
+R = 8.314;                           % (J mol-1 K-1)
+Tair = TT_5min.air_T + 273.15;       % (K)
+PPa = TT_5min.miniATM_air_Pmbar*100; % (Pa)
 
-fw_umol = fw .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);           % Flux beneath chamber
+% Flux through bottom membrane
+fc_umol = fc .* PPa ./ (R * Tair);           
 
-flux_PO_umol = flux_PO .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair); % Flux from PO water-inventory method
+% Flux beneath chamber
+fw_umol = fw .* PPa ./ (R * Tair);           
 
-fwt_PO_umol = fwt_PO .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);   % Flux from solely PO measurements
+% Flux from PO water-inventory method
+flux_PO_umol = flux_PO .* PPa ./ (R * Tair); 
 
-fwt_umol = fwt .* TT_5min.miniATM_air_Pmbar*100 ./ (R * Tair);         % True flux
+% Smoothed flux from PO water-inventory method
+flux_PO_umol_smooth = smoothdata(flux_PO_umol,"movmean",4);            
 
-flux_PO_umol_smooth = smoothdata(flux_PO_umol,"movmean",4);            % Smoothed PO water-inventory flux
+% True flux
+fwt_umol = fwt .* PPa ./ (R * Tair);         
 
 lblsize = 18;
 lgdsize = 16;
@@ -242,17 +265,34 @@ lgdsize = 16;
 f = figure;clc 
 yline(0,'k','LineWidth',2,'HandleVisibility','off','Layer','bottom')
 hold on
-% plot(TT_5min.TIME, flux_PO_umol, '.-', 'Color', miniATM_water_clr, 'DisplayName', 'Pro-Oceanus water-inventory flux')
-plot(TT_5min.TIME, flux_PO_umol_smooth, '.-', 'Color', miniATM_water_clr, 'DisplayName', 'Pro-Oceanus water-inventory flux = $-h\cdot \partial C_w / \partial t$')
-% plot(TT_5min.TIME, fwt_PO_umol, '.-', 'Color', miniATM_water_clr, 'DisplayName', 'Flux from Pro-Oceanus = $k_{w,PO}(C_w - C_a)$')
-plot(TT_5min.TIME, fw_umol, '.-', 'Color', dal_flux_clr, 'DisplayName', 'Flux beneath chamber = $k_w(C_w - C_c)$')
-% plot(TT_5min.TIME, fwt_umol, '.-', 'DisplayName', '"True" flux')
+plot(TT_5min.TIME, fc_umol, '.-', 'Color', dal_flux_clr, 'DisplayName', '$f_c$')
+plot(TT_5min.TIME, fw_umol, '.-', 'Color', rgb('OrangeRed'), 'DisplayName', '$f_w$')
+plot(TT_5min.TIME, fwt_umol, '.-', 'Color', rgb('Goldenrod'), 'DisplayName', '$f_w^\dagger$')
+% plot(TT_5min.TIME, flux_PO_umol, '.-', 'Color', miniATM_water_clr, 'DisplayName', 'PO water inventory flux')
+plot(TT_5min.TIME, flux_PO_umol_smooth, '.-', 'Color', miniATM_water_clr, 'DisplayName', 'PO water inventory flux')
 xlabel('Local Time')
 ylabel('Air-water flux (\mumol m^{-2} s^{-1})')
 ax = gca;
 ax.FontSize = lblsize;
 
 lgd = legend('show','location','south','interpreter','latex');
+lgd.FontSize = lgdsize;
+
+grid on
+box on
+
+%% Version of figure for poster
+f = figure;clc 
+yline(0,'k','LineWidth',2,'HandleVisibility','off','Layer','bottom')
+hold on
+plot(TT_5min.TIME, flux_PO_umol_smooth, '-', 'Color', miniATM_water_clr, 'DisplayName', 'Pro-Oceanus water-inventory flux')
+plot(TT_5min.TIME, fw_umol, '-', 'Color', dal_flux_clr, 'DisplayName', 'Flux beneath chamber')
+xlabel('Local Time')
+ylabel('Air-water flux (\mumol m^{-2} s^{-1})')
+ax = gca;
+ax.FontSize = lblsize;
+
+lgd = legend('show','location','south');
 lgd.FontSize = lgdsize;
 
 grid on

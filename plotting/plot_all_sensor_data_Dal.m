@@ -157,11 +157,11 @@ h10.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h10.FaceColor = dal_flux_clr;
 plot(TT_5min.datetime_local,corrected_flux_dal,'-','color',dal_flux_clr,'DisplayName','eosFD Corrected Flux')
 
-xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
-xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
-xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
-xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
-xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,01,31,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,01,31,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,02,01,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,02,01,17,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
+xline(datetime(2026,02,02,8,00,00,'TimeZone','America/Halifax'),'--','linewidth',2,'FontSize',lgdsize,'LabelVerticalAlignment','bottom','handlevisibility','off')
 
 ylabel('Flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
 

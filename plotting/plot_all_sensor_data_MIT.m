@@ -93,6 +93,9 @@ miniATM_water_clr = '#0000CD';
 
 alpha = 0.12;
 
+lblsize = 18;
+lgdsize = 16;
+
 %%
 %--------------------------------------------------------------------------
 % Plot offset test data (Calculate and display offsets)
@@ -105,10 +108,13 @@ plot(TT_5min.TIME, TT_5min.dal_ref_ppm,'-','color',dal_ref_clr,'DisplayName','Da
 plot(TT_5min.TIME, TT_5min.dal_sample_ppm,'-','color',dal_sample_clr,'DisplayName','Dal eosFD Sample')
 plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM - Air Phase')
 plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',rgb('darkblue'),'DisplayName','Pro-Oceanus Mini ATM - Water Phase')
-ylabel('CO_2 Concentration (ppm)')
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
+ax = gca;
+ax.FontSize = lblsize;
 grid on; box on
 lgd = legend('show','location','northoutside');
 lgd.NumColumns = 3;
+lgd.FontSize = lgdsize;
 
 start_ind = 49;
 
@@ -138,20 +144,23 @@ text(TT_5min.TIME(100), 536, txt1, 'FontSize', 12)
 % Plot CO2 concentration data without uncertainty bounds for all sensors
 %--------------------------------------------------------------------------
 fig1 = figure;clf
-plot(TT_5min.TIME, TT_5min.mit_ref_ppm,'-','color',mit_ref_clr,'DisplayName','MIT eosFD Reference')
+% plot(TT_5min.TIME, TT_5min.mit_ref_ppm,'-','color',mit_ref_clr,'DisplayName','MIT eosFD Reference')
 hold on
-plot(TT_5min.TIME, TT_5min.mit_samplecorr_ppm,'-','color',mit_sample_clr,'DisplayName','MIT eosFD Sample (corrected)')
+% plot(TT_5min.TIME, TT_5min.mit_samplecorr_ppm,'-','color',mit_sample_clr,'DisplayName','MIT eosFD Sample (corrected)')
 % plot(TT_5min.TIME, TT_5min.miniCO2_water_ppm, '-', 'color', miniCO2_clr,'DisplayName', 'Pro-Oceanus Mini CO_2')
 % plot(TT_5min.TIME, TT_5min.turner_ppm,'-','color',turner_clr,'DisplayName','Turner')
 plot(TT_5min.TIME, TT_5min.dal_ref_ppm,'-','color',dal_ref_clr,'DisplayName','Dal eosFD Reference')
 plot(TT_5min.TIME, TT_5min.dal_samplecorr_ppm,'-','color',dal_sample_clr,'DisplayName','Dal eosFD Sample (corrected)')
-plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM - Air Phase')
-plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Mini ATM - Water Phase')
+plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Air')
+plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Water')
 xlabel('Local Time')
-ylabel('CO_2 Concentration (ppm)')
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
+ax = gca;
+ax.FontSize = lblsize;
 grid on; box on
-lgd = legend('show','location','northoutside');
+lgd = legend('show','location','north');
 lgd.NumColumns = 3;
+lgd.FontSize = lgdsize;
 
 ind_start = 42;
 ind_stop = 52;
@@ -240,11 +249,13 @@ h8.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h8.FaceColor = miniATM_water_clr;
 plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Mini ATM - Water Phase')
 
-ylabel('CO_2 Concentration (ppm)')
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
+ax = gca;
+ax.FontSize = lblsize;
 
 lgd = legend('show','location','north');
 lgd.NumColumns = 4;
-
+lgd.FontSize = lgdsize;
 %%
 %--------------------------------------------------------------------------
 % Plot eosFD fluxes
@@ -294,11 +305,11 @@ h12 = patch(patch_x,patch_y,'w','FaceAlpha',alpha,'EdgeColor','none');
 h12.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h12.FaceColor = mit_sample_clr;
 plot(TT_5min.TIME,corrected_flux_mit,':','color',mit_sample_clr,'DisplayName','MIT Corrected Flux (5-min avg)')
-ylabel('Flux (\mumol m^{-2} s^{-1})')
+ylabel('Flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
 
 lgd = legend('show','location','northoutside');
 lgd.NumColumns = 2;
-
+lgd.FontSize = lgdsize;
 % xlim([TT_5min.TIME(1) TT_5min.TIME(end)])
 % % ylim([-1 0.5])
 

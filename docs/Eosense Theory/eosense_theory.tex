@@ -307,13 +307,13 @@ The time-dependent air--water CO$_2$ flux rate beneath the eosFD Sample chamber 
 	\boxed{ f_w = k_w(C_w - C_c) }
 \end{equation}
 
-Eqs. \ref{eq:16} and \ref{eq:20} depend on:
+Eqs. \ref{eq:18} and \ref{eq:19} depend on:
 \begin{itemize}
 	\item known geometry ($S_w$, $S_c$, $V_c$),
 	\item the eosFD Sample Node-measured CO$_2$ concentrations ($C_s^0$, $C_s$),
 	\item the atmospheric CO$_2$ concentration ($C_a$), which must be measured with an external CO$_2$ sensor in air,
 	\item the water CO$_2$ concentration ($C_w$), which must be measured with an external CO$_2$ sensor in water,
-	\item the bottom-membrane gas transfer velocity ($k_c$), obtained via calibration (or using the averaged Eosense value; see Table \ref{tab:eosense-values}), and
+	\item the bottom-membrane gas transfer velocity ($k_c$), obtained via calibration, and
 	\item the air--water gas transfer velocity beneath the chamber ($k_w$), which must be determined through analysis in the steady state (see next section).
 \end{itemize}
 
@@ -358,7 +358,7 @@ We can now derive a simple expression for the steady-state true air--water CO$_2
 
 First, substitute Eq. \ref{eq:20} into Eq. \ref{eq:21}. Given that $S_a = S_c = S_w$, this results in:
 \begin{equation}\label{eq:22}
-	k_w = \frac{k_a}{\dfrac{C_w - C_s}{C_s - C_r} - \dfrac{k_a}{k_c}}
+	\boxed{k_w = \frac{k_a}{\dfrac{C_w - C_s}{C_s - C_r} - \dfrac{k_a}{k_c}}}
 \end{equation}
 
 Assuming that $k_w^\dagger = k_w$, the bulk equation for the true air--water flux is:
