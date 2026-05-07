@@ -31,7 +31,7 @@ corrected_flux_dal = G * (CO2sample_corrected - CO2ref);
 % Plot the data
 %--------------------------------------------------------------------------
 % Define concentration uncertainties
-dal_eos_err = 40*ones(height(TT_5min),1);             % ppm
+dal_eos_err = 40*ones(height(TT_5min),1);            % ppm
 miniATM_err = 0.03*2000*ones(height(TT_5min),1);     % ppm
 
 % Define colors

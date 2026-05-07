@@ -1,3 +1,15 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% plot_all_sensor_data_MIT.m
+% This script plots the timeseries data from the eosFDs, Pro-Oceanus and 
+% Turner sensors, as obtained with the MIT experimental setup.
+%
+% AUTHOR: Emily Chua
+%
+% DATE:
+% First created: 3/26/26
+% Last updated:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 clear;close all;clc
 
 % -------------------------------------------------------------------------
@@ -106,8 +118,8 @@ hold on
 plot(TT_5min.TIME, TT_5min.mit_sample_ppm,'-','color',mit_sample_clr,'DisplayName','MIT eosFD Sample')
 plot(TT_5min.TIME, TT_5min.dal_ref_ppm,'-','color',dal_ref_clr,'DisplayName','Dal eosFD Reference')
 plot(TT_5min.TIME, TT_5min.dal_sample_ppm,'-','color',dal_sample_clr,'DisplayName','Dal eosFD Sample')
-plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM - Air Phase')
-plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',rgb('darkblue'),'DisplayName','Pro-Oceanus Mini ATM - Water Phase')
+plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM Air')
+plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',rgb('darkblue'),'DisplayName','Pro-Oceanus Mini ATM Water')
 ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
 ax = gca;
 ax.FontSize = lblsize;
@@ -115,8 +127,6 @@ grid on; box on
 lgd = legend('show','location','northoutside');
 lgd.NumColumns = 3;
 lgd.FontSize = lgdsize;
-
-start_ind = 49;
 
 eos_dal_offset = mean((TT_5min.dal_sample_ppm(start_ind:end) - TT_5min.dal_ref_ppm(start_ind:end)),'omitmissing');
 eos_dal_sd = std((TT_5min.dal_sample_ppm(start_ind:end) - TT_5min.dal_ref_ppm(start_ind:end)),'omitmissing');
@@ -130,6 +140,7 @@ miniATM_offset = mean((TT_5min.miniATM_water_ppm(start_ind:end) - TT_5min.miniAT
 miniATM_sd = std((TT_5min.miniATM_water_ppm(start_ind:end) - TT_5min.miniATM_air_ppm(start_ind:end)),'omitmissing');
 disp(['Pro-Oceanus Mini ATM offset: ',num2str(miniATM_offset,3),' +/- ',num2str(miniATM_sd,3)])
 
+start_ind = 49;
 xlim([TT_5min.TIME(start_ind) TT_5min.TIME(end)])
 
 txt1 = ['Dal eosFD mean offset = ',num2str(eos_dal_offset,2), ' +/- ', num2str(eos_dal_sd,2),' ppm'];
@@ -144,28 +155,30 @@ text(TT_5min.TIME(100), 536, txt1, 'FontSize', 12)
 % Plot CO2 concentration data without uncertainty bounds for all sensors
 %--------------------------------------------------------------------------
 fig1 = figure;clf
-% plot(TT_5min.TIME, TT_5min.mit_ref_ppm,'-','color',mit_ref_clr,'DisplayName','MIT eosFD Reference')
+plot(TT_5min.TIME, TT_5min.mit_ref_ppm,'-','color',mit_ref_clr,'DisplayName','MIT eosFD Reference')
 hold on
-% plot(TT_5min.TIME, TT_5min.mit_samplecorr_ppm,'-','color',mit_sample_clr,'DisplayName','MIT eosFD Sample (corrected)')
-% plot(TT_5min.TIME, TT_5min.miniCO2_water_ppm, '-', 'color', miniCO2_clr,'DisplayName', 'Pro-Oceanus Mini CO_2')
-% plot(TT_5min.TIME, TT_5min.turner_ppm,'-','color',turner_clr,'DisplayName','Turner')
+plot(TT_5min.TIME, TT_5min.mit_samplecorr_ppm,'-','color',mit_sample_clr,'DisplayName','MIT eosFD Sample (corrected)')
+plot(TT_5min.TIME, TT_5min.miniCO2_water_ppm, '-', 'color', miniCO2_clr,'DisplayName', 'Pro-Oceanus Mini CO_2')
+plot(TT_5min.TIME, TT_5min.turner_ppm,'-','color',turner_clr,'DisplayName','Turner')
 plot(TT_5min.TIME, TT_5min.dal_ref_ppm,'-','color',dal_ref_clr,'DisplayName','Dal eosFD Reference')
 plot(TT_5min.TIME, TT_5min.dal_samplecorr_ppm,'-','color',dal_sample_clr,'DisplayName','Dal eosFD Sample (corrected)')
-plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Air')
-plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Water')
+plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM Air')
+plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Mini ATM Water')
 xlabel('Local Time')
 ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
 ax = gca;
 ax.FontSize = lblsize;
 grid on; box on
-lgd = legend('show','location','north');
+lgd = legend('show','location','northoutside');
 lgd.NumColumns = 3;
 lgd.FontSize = lgdsize;
 
-ind_start = 42;
-ind_stop = 52;
+ind_start = 49;
+% ind_stop = 52;
 x1 = TT_5min.TIME(ind_start);  
-x2 = TT_5min.TIME(ind_stop);
+% x2 = TT_5min.TIME(ind_stop);
+
+% xlim([TT_5min.TIME(start_ind) TT_5min.TIME(end)])
 
 % yl = ylim;
 % fill([x1 x2 x2 x1], [yl(1) yl(1) yl(2) yl(2)], 'r', 'FaceAlpha', 0.3, 'EdgeColor', 'none','HandleVisibility','off')
@@ -238,7 +251,7 @@ patch_y = [y_lower; flipud(y_upper)];
 h7 = patch(patch_x, patch_y,'w','FaceAlpha', alpha, 'EdgeColor', 'none');
 h7.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h7.FaceColor = miniATM_air_clr;
-plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM - Air Phase')
+plot(TT_5min.TIME, TT_5min.miniATM_air_ppm,'-','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','Pro-Oceanus Mini ATM Air')
 
 y_upper = TT_5min.miniATM_water_ppm + pro_water_err;
 y_lower = TT_5min.miniATM_water_ppm - pro_water_err;
@@ -247,13 +260,13 @@ patch_y = [y_lower; flipud(y_upper)];
 h8 = patch(patch_x, patch_y,'w','FaceAlpha', alpha, 'EdgeColor', 'none');
 h8.Annotation.LegendInformation.IconDisplayStyle = 'off';
 h8.FaceColor = miniATM_water_clr;
-plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Mini ATM - Water Phase')
+plot(TT_5min.TIME, TT_5min.miniATM_water_ppm,'-','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','Pro-Oceanus Mini ATM Water')
 
 ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
 ax = gca;
 ax.FontSize = lblsize;
 
-lgd = legend('show','location','north');
+lgd = legend('show','location','northoutside');
 lgd.NumColumns = 4;
 lgd.FontSize = lgdsize;
 %%

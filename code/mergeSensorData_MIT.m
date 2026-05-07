@@ -49,7 +49,6 @@ load(fullfile(rawPath, datFile.name));
 % INPUTS
 dal_offset = 6.5;  % (ppm)
 mit_offset = 3.2;  % (ppm)
-% mit_offset = 6.5;
 
 % Calculate corrected sample concentration and add to tables
 mit_samplecorr_ppm = mitDat.SAMPLEPCO2 - mit_offset; % (ppm)
