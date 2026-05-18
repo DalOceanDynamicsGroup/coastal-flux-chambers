@@ -23,17 +23,34 @@ selpath = uigetdir(start_path,dialog_title);
 [~,expt_name] = fileparts(selpath);
 cd([selpath,'\merged'])
 load('allDat.mat')
-%%
-% Optional: Crop beginning of dataset
+
+%--------------------------------------------------------------------------
+% Set start and end times
+%--------------------------------------------------------------------------
 switch expt_name
+    case '2026-02-13_all-offsets-open-box-long'
+        ind_start = 49;
+        TT_5min(1:ind_start,:) = [];
+        ind_stop = height(TT_5min);
     case '2026-02-12_CO2-pulse-large'
-        % Keep as is
+        ind_start = 1;
+        TT_5min(1:ind_start,:) = [];
+        ind_stop = height(TT_5min);
     case '2026-02-17_CO2-pulse-small'
-        TT_5min(1:45,:) = [];
+        ind_start = 45;
+        TT_5min(1:ind_start,:) = [];
+        ind_stop = height(TT_5min);
     case '2026-02-19_CO2-pulse-large-turbulent'
-        TT_5min(1:41,:) = [];
+        ind_start = 41;
+        TT_5min(1:ind_start,:) = [];
+        ind_stop = 280;
 end
 
+reltime = hours(TT_5min.TIME - TT_5min.TIME(1));
+
+% -------------------------------------------------------------------------
+% Unpack data
+% -------------------------------------------------------------------------
 nodes.Dal.name = 'Dal';
 nodes.Dal.Cr = TT_5min.dal_ref_ppm;
 nodes.Dal.Cs = TT_5min.dal_samplecorr_ppm;
@@ -46,7 +63,28 @@ nodes.MIT.Cs = TT_5min.mit_samplecorr_ppm;
 nodes.MIT.Ca = TT_5min.miniATM_air_ppm;
 nodes.MIT.Cw = TT_5min.miniATM_water_ppm;
 
-datetime = TT_5min.TIME;
+reltime = hours(TT_5min.TIME - TT_5min.TIME(1));
+
+%--------------------------------------------------------------------------
+% Set path for saving figures
+%--------------------------------------------------------------------------
+switch expt_name
+    case '2026-02-12_CO2-pulse-large'
+        fig_path = 'G:\My Drive\Dal and MIT\Lab Experiments\Figures\MIT\Expt - Large CO2 Pulse';
+    case '2026-02-17_CO2-pulse-small'
+        fig_path = 'G:\My Drive\Dal and MIT\Lab Experiments\Figures\MIT\Expt - Small CO2 Pulse';
+    case '2026-02-19_CO2-pulse-large-turbulent'
+        fig_path = 'G:\My Drive\Dal and MIT\Lab Experiments\Figures\MIT\Expt - Large Turbulent CO2 Pulse';
+end
+
+%--------------------------------------------------------------------------
+% Define plotting conventions
+%--------------------------------------------------------------------------
+% Define plot limits
+x1 = 0;  
+x2 = 18;
+y1 = 400;
+y2 = 1300;
 
 % Define plot colors
 dal_ref_clr = '#8A2BE2';
@@ -56,19 +94,36 @@ mit_sample_clr = '#41ae76';
 miniATM_air_clr = '#41b6c4';
 miniATM_water_clr = '#0000CD';
 
-% ---Compare Ca (Pro-Oceanus) and Cr (Dal Eosense Reference)---------------
-figure,clf
-plot(datetime, nodes.Dal.Cr, '.', 'color', dal_ref_clr, 'DisplayName', 'C_{r,Dal}')
-hold on
-plot(datetime, nodes.MIT.Cr, '.', 'color', mit_ref_clr, 'DisplayName', 'C_{r,MIT}')
-plot(datetime, nodes.Dal.Ca, '.', 'color', miniATM_air_clr, 'DisplayName', 'C_{a,PO}')
-legend('show','location','north')
-xlabel('Local Time')
-ylabel('CO_2 Concentration (ppm)')
-grid on; box on
+lblsize = 18;
+lgdsize = 16;
 
-disp('Press enter to continue')
-pause
+%--------------------------------------------------------------------------
+% Compare Ca (Pro-Oceanus) and Cr (Dal Eosense Reference)
+%--------------------------------------------------------------------------
+figure,clf
+plot(reltime, nodes.Dal.Cr, '.-', 'color', dal_ref_clr, 'DisplayName', 'C_{r,Dal}')
+hold on
+plot(reltime, nodes.MIT.Cr, '.-', 'color', mit_ref_clr, 'DisplayName', 'C_{r,MIT}')
+plot(reltime, nodes.Dal.Ca, '.-', 'color', miniATM_air_clr, 'DisplayName', 'C_{a,PO}')
+lgd = legend('show','location','northeast');
+lgd.NumColumns = 3;
+lgd.FontSize = lgdsize;
+xlim([x1 x2])
+ylim([y1 y2])
+xlabel('Hours Elapsed','FontSize',lblsize)
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
+grid on; box on
+ax = gca;
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+
+% Optional save figure
+% cd(fig_path)
+% exportgraphics(gcf,'compare_Ca_Cr.png','Padding','tight')
+% savefig(gcf,'compare_Ca_Cr.fig')
+%%
+% disp('Press enter to continue')
+% pause
 
 % -------------------------------------------------------------------------
 % Calculate dynamic kw(t) using Eq. 22
@@ -96,46 +151,59 @@ or = [0.8500 0.3250 0.0980];
 colororder([bl; or])
 
 yyaxis left
-plot(datetime, nodes.Dal.Cr, '-','color', dal_ref_clr, 'DisplayName', 'C_{r,Dal}')
+plot(reltime, nodes.Dal.Cr, '-','color', dal_ref_clr, 'DisplayName', 'C_{r,Dal}')
 hold on
-plot(datetime, nodes.Dal.Cs, '-', 'color', dal_sample_clr, 'DisplayName', 'C_{s,Dal} (corrected)')
-plot(datetime, nodes.MIT.Cr, '-', 'color', mit_ref_clr, 'DisplayName', 'C_{r,MIT}')
-plot(datetime, nodes.MIT.Cs, '-','color', mit_sample_clr, 'DisplayName', 'C_{s,MIT} (corrected)')
-plot(datetime, nodes.Dal.Ca, '-o', 'MarkerSize', 2,'color', miniATM_air_clr, 'DisplayName', 'C_{a,PO}')
-plot(datetime, nodes.Dal.Cw, '-^', 'MarkerSize', 2,'color', miniATM_water_clr, 'DisplayName', 'C_{w,PO}')
-ylabel('CO_2 Concentration (ppm)')
-lgd = legend('show','location','northoutside');
-lgd.NumColumns = 3;
+plot(reltime, nodes.Dal.Cs, '-', 'color', dal_sample_clr, 'DisplayName', 'C_{s,Dal} (corrected)')
+plot(reltime, nodes.MIT.Cr, '-', 'color', mit_ref_clr, 'DisplayName', 'C_{r,MIT}')
+plot(reltime, nodes.MIT.Cs, '-','color', mit_sample_clr, 'DisplayName', 'C_{s,MIT} (corrected)')
+plot(reltime, nodes.Dal.Ca, '-o', 'MarkerSize', 2,'color', miniATM_air_clr, 'DisplayName', 'C_{a,PO}')
+plot(reltime, nodes.Dal.Cw, '-^', 'MarkerSize', 2,'color', miniATM_water_clr, 'DisplayName', 'C_{w,PO}')
+xlim([x1 x2])
+ylim([y1 y2])
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
+lgd = legend('show','location','northeast');
+lgd.NumColumns = 4;
+lgd.FontSize = lgdsize;
 
 yyaxis right
-plot(datetime, nodes.Dal.kw_dynamic, ':', 'Color', dal_sample_clr, 'DisplayName', 'Calculated k_{w,Dal}')
+plot(reltime, nodes.Dal.kw_dynamic, ':', 'Color', dal_sample_clr, 'DisplayName', 'Calculated k_{w,Dal}')
 hold on
-plot(datetime, nodes.MIT.kw_dynamic, ':', 'Color', mit_sample_clr, 'DisplayName', 'Calculated k_{w,MIT}')
+plot(reltime, nodes.MIT.kw_dynamic, ':', 'Color', mit_sample_clr, 'DisplayName', 'Calculated k_{w,MIT}')
 yline(0,'LineWidth',2,'Color','k','HandleVisibility','off')
-xlabel('Local Time')
-ylabel('k_w (m s^{-1})')
+xlabel('Hours Elapsed','FontSize',lblsize)
+ylabel('k_w (m s^{-1})','FontSize',lblsize)
+xlim([x1 x2])
 ylim([-1E-4 1E-4])
 ax = gca;
 ax.YColor = 'k';
 grid on; box on
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+
+% Optional save figure
+% cd(fig_path)
+% exportgraphics(gcf,'dynamic_kw.png','Padding','tight')
+% savefig(gcf,'dynamic_kw.fig')
 %%
-disp('Note start and stop indices for pseudo-steady state window, then press enter to continue')
-pause
-%%
-% INPUT
+% INPUT - choose indices!
+% disp('Note start and stop indices for pseudo-steady state window, then press enter to continue')
+% pause
+
 switch expt_name
     case '2026-02-12_CO2-pulse-large'
-        ind_start = 42;
-        ind_stop = 52;
+        % ind_start_SS = 41;
+        % ind_stop_SS = 47;
+        ind_start_SS = 30;
+        ind_stop_SS = 36;
     case '2026-02-17_CO2-pulse-small'
-        ind_start = 42;
-        ind_stop = 52;
+        ind_start_SS = 16;
+        ind_stop_SS = 22;
     case '2026-02-19_CO2-pulse-large-turbulent'
-        ind_start = 82;
-        ind_stop = 88;
+        ind_start_SS = 19;
+        ind_stop_SS = 25;
 end
 
-ind = ind_start:ind_stop;
+ind = ind_start_SS:ind_stop_SS;
 
 % ---Calculate kw (m s-1) using Eq. 22-------------------------------------
 for fn = fieldnames(nodes)'
@@ -152,11 +220,11 @@ end
 % Now calculate flux and kw from Pro-Oceanus only
 % -------------------------------------------------------------------------
 H = 0.115;  % (m); height of water in box
-dt = seconds(datetime(2) - datetime(1)); % TT_5min has uniform spacing by definition
+dt = seconds(TT_5min.TIME(2) - TT_5min.TIME(1)); % TT_5min has uniform spacing by definition
 
 % Calculate flux from water-side measurements
 Cw = nodes.Dal.Cw;
-dCwdt = gradient(Cw, dt); % (ppm s-1); gradient function computes central differences for interior points
+dCwdt = gradient(Cw, dt);  % (ppm s-1); gradient function computes central differences for interior points
 fwPO_ppm = -H * dCwdt;     % (ppm m s-1)
 
 % Calculate kw over entire time series for comparison
@@ -168,14 +236,13 @@ Ca_ss = mean(nodes.Dal.Ca(ind));      % (ppm)
 fwPO_ss = mean(fwPO_ppm(ind));        % (ppm m s-1)
 kwPO_ms = fwPO_ss / (Cw_ss - Ca_ss);  % (m s-1)
 
+% -------------------------------------------------------------------------
 % Convert kw's from m s-1 to cm h-1
+% -------------------------------------------------------------------------
 nodes.Dal.kw_cmh = nodes.Dal.kw_ms * 100 * 3600; % (cm h-1)
 nodes.MIT.kw_cmh = nodes.MIT.kw_ms * 100 * 3600; % (cm h-1)
 kw_PO_cmh = kwPO_ms * 100 * 3600;                % (cm h-1)
 
-% txt1 = ['k_{w,Dal} (Eq. 22) = ',num2str(nodes.Dal.kw_ms,3),' m s^{-1} or ',num2str(nodes.Dal.kw_cmh,3),' cm h^{-1}'];
-% txt2 = ['k_{w,MIT} (Eq. 22) = ',num2str(nodes.MIT.kw_ms,3),' m s^{-1} or ',num2str(nodes.MIT.kw_cmh,3),' cm h^{-1}'];
-% txt3 = ['k_{w,PO} = ',num2str(kwPO_ms,3),' m s^{-1} or ',num2str(kw_PO_cmh,3),' cm h^{-1}'];
 txt1 = ['k_{w,Dal} (Eq. 22) = ',num2str(nodes.Dal.kw_cmh,3),' cm h^{-1}'];
 txt2 = ['k_{w,MIT} (Eq. 22) = ',num2str(nodes.MIT.kw_cmh,3),' cm h^{-1}'];
 txt3 = ['k_{w,PO} = ',num2str(kw_PO_cmh,3),' cm h^{-1}'];
@@ -187,66 +254,106 @@ figure,clf
 bl = [0 0 0];
 or = [0.8500 0.3250 0.0980];
 colororder([bl; or])
-x1 = datetime(ind_start);
-x2 = datetime(ind_stop);
+x1_SS = reltime(ind_start_SS);
+x2_SS = reltime(ind_stop_SS);
 
 yyaxis left
-plot(datetime, nodes.Dal.Cr,'-','color',dal_ref_clr,'DisplayName','C_{r,Dal}')
+plot(reltime, nodes.Dal.Cr,'-','color',dal_ref_clr,'DisplayName','C_{r,Dal}')
 hold on
-plot(datetime, nodes.Dal.Cs,'-','color',dal_sample_clr,'DisplayName','C_{s,Dal} (corrected)')
-plot(datetime, nodes.MIT.Cr,'-','color',mit_ref_clr,'DisplayName','C_{r,MIT}')
-plot(datetime, nodes.MIT.Cs,'-','color',mit_sample_clr,'DisplayName','C_{w,MIT} (corrected)')
-plot(datetime, nodes.Dal.Ca,'-o','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','C_{a,PO}')
-plot(datetime, nodes.Dal.Cw,'-^','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','C_{w,PO}')
-ylabel('CO_2 Concentration (ppm)')
+plot(reltime, nodes.Dal.Cs,'-','color',dal_sample_clr,'DisplayName','C_{s,Dal} (corrected)')
+plot(reltime, nodes.MIT.Cr,'-','color',mit_ref_clr,'DisplayName','C_{r,MIT}')
+plot(reltime, nodes.MIT.Cs,'-','color',mit_sample_clr,'DisplayName','C_{w,MIT} (corrected)')
+plot(reltime, nodes.Dal.Ca,'-o','MarkerSize',2,'color',miniATM_air_clr,'DisplayName','C_{a,PO}')
+plot(reltime, nodes.Dal.Cw,'-^','MarkerSize',2,'color',miniATM_water_clr,'DisplayName','C_{w,PO}')
+xlim([x1 x2])
+ylim([y1 y2])
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
 switch expt_name
     case '2026-02-12_CO2-pulse-large'
-        xt = datetime(ind_start - 15); % x-position of text
+        xt = reltime(ind_start_SS); % x-position of text
         text(xt, 600, txt1, 'FontSize', 12)
         text(xt, 550, txt2, 'FontSize', 12)
         text(xt, 500, txt3, 'FontSize', 12)
     case '2026-02-17_CO2-pulse-small'
-        xt = datetime(ind_start - 30); % x-position of text
+        xt = reltime(ind_start_SS); % x-position of text
         text(xt, 570, txt1, 'FontSize', 12)
-        text(xt, 540, txt2, 'FontSize', 12)
-        text(xt, 510, txt3, 'FontSize', 12)
+        text(xt, 530, txt2, 'FontSize', 12)
+        text(xt, 490, txt3, 'FontSize', 12)
     case '2026-02-19_CO2-pulse-large-turbulent'
-        xt = datetime(ind_start - 10); % x-position of text
-        text(xt, 650, txt1, 'FontSize', 12)
-        text(xt, 620, txt2, 'FontSize', 12)
-        text(xt, 590, txt3, 'FontSize', 12)
+        xt = reltime(ind_start_SS + 20); % x-position of text
+        text(xt, 800, txt1, 'FontSize', 12)
+        text(xt, 760, txt2, 'FontSize', 12)
+        text(xt, 720, txt3, 'FontSize', 12)
 end
 
 yyaxis right
-plot(datetime, nodes.Dal.kw_dynamic, ':', 'color', dal_sample_clr, 'DisplayName', 'k_{w,Dal} (Eq. 22)')
+plot(reltime, nodes.Dal.kw_dynamic, ':', 'color', dal_sample_clr, 'DisplayName', 'k_{w,Dal} (Eq. 22)')
 hold on
-plot(datetime, nodes.MIT.kw_dynamic, ':', 'color', mit_sample_clr, 'DisplayName', 'k_{w,MIT} (Eq. 22)')
-plot(datetime, kwPO_dynamic, ':', 'color', miniATM_water_clr, 'DisplayName', 'k_{w,PO} (from \partialC_w/\partialt)')
+plot(reltime, nodes.MIT.kw_dynamic, ':', 'color', mit_sample_clr, 'DisplayName', 'k_{w,MIT} (Eq. 22)')
+plot(reltime, kwPO_dynamic, ':', 'color', miniATM_water_clr, 'DisplayName', 'k_{w,PO} (from \partialC_w/\partialt)')
 yline(0, 'k', 'LineWidth', 2, 'HandleVisibility', 'off')
-ylabel('k_w (m s^{-1})')
-lgd = legend('show','location','northoutside');
+xlabel('Hours Elapsed','FontSize',lblsize)
+ylabel('k_w (m s^{-1})','FontSize',lblsize)
+lgd = legend('show','location','northeast');
 lgd.NumColumns = 5;
+lgd.FontSize = lgdsize;
+xlim([x1 x2])
 % ylim([-1E-4 1E-4])
 ylim([-0.0001 0.0001])
 
 yl = ylim;
-fill([x1 x2 x2 x1], [yl(1) yl(1) yl(2) yl(2)], 'r', 'FaceAlpha', 0.3, 'EdgeColor', 'none','DisplayName','Pseudo Steady State')
+fill([x1_SS x2_SS x2_SS x1_SS], [yl(1) yl(1) yl(2) yl(2)], 'r', 'FaceAlpha', 0.3, 'EdgeColor', 'none','DisplayName','Pseudo Steady State')
 ax = gca;
 ax.YColor = 'k';
 grid on; box on
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
 
+% Optional save figure
+% cd(fig_path)
+% exportgraphics(gcf,'identify_pseudoSS.png','Padding','tight')
+% savefig(gcf,'identify_pseudoSS.fig')
+
+%%
+figure,clf
+plot(reltime, nodes.Dal.Cw - nodes.Dal.Cs, '-', 'color', dal_sample_clr, 'DisplayName', 'C_w - C_s (Dal)')
+hold on
+plot(reltime, nodes.Dal.Cs - nodes.Dal.Cr, '--', 'color', dal_sample_clr, 'DisplayName', 'C_s - C_r (Dal)')
+plot(reltime, nodes.MIT.Cw - nodes.MIT.Cs, '-', 'color', mit_sample_clr, 'DisplayName', 'C_w - C_s (MIT)')
+hold on
+plot(reltime, nodes.MIT.Cs - nodes.MIT.Cr, '--', 'color', mit_sample_clr, 'DisplayName', 'C_s - C_r (MIT)')
+xlabel('Hours Elapsed','FontSize',lblsize)
+ylabel('Concentration difference (ppm)','FontSize',lblsize)
+lgd = legend('show','FontSize',lblsize,'location','southeast');
+lgd.NumColumns = 2;
+lgd.FontSize = lgdsize;
+xlim([x1 x2])
+ylim([-700 100])
+grid on; box on
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+
+% Optional save figure
+% cd(fig_path)
+% exportgraphics(gcf,'conc_differences.png','Padding','tight')
+% savefig(gcf,'conc_differences.fig')
 %%
 % -------------------------------------------------------------------------
 % Calculate eosFD fluxes
 % -------------------------------------------------------------------------
-% ---1. Calculate Cc(t) using Eq. 18---------------------------------------
+% ---First calculate Cc(t) using Eq. 18------------------------------------
 % Define initial conditions manually
 fig = figure;clf
-plot(datetime, nodes.Dal.Cs, '.', 'color', dal_sample_clr, 'DisplayName', 'C_{s,Dal}')
+plot(reltime, nodes.Dal.Cs, '.', 'color', dal_sample_clr, 'DisplayName', 'C_{s,Dal}')
 hold on
-plot(datetime, nodes.MIT.Cs, '.', 'color', mit_sample_clr, 'DisplayName', 'C_{s,MIT}')
-ylabel('CO_2 Concentration (ppm)')
+plot(reltime, nodes.MIT.Cs, '.', 'color', mit_sample_clr, 'DisplayName', 'C_{s,MIT}')
+xlim([x1 x2])
+xlabel('Hours Elapsed','FontSize',lblsize)
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
 grid on; box on;
+ax = gca;
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
 
 dcm_obj = datacursormode(fig);
 datacursormode on;
@@ -276,7 +383,6 @@ Cr0 = TT_5min.dal_ref_ppm(ind_t0);        % (ppm); initial Reference concentrati
 
 t = seconds(TT_5min.TIME - TT_5min.TIME(1)); % (s)
 
-% --Calculate Cc using Eq. 18----------------------------------------------
 for fn = fieldnames(nodes)'
     s = fn{1};
 
@@ -293,38 +399,49 @@ end
 % Plot result
 cd('G:\My Drive\Dal and MIT\Lab Experiments\Figures\MIT')
 figure,clf
-plot(datetime, nodes.Dal.Cs, '.-', 'color', dal_sample_clr, 'DisplayName', 'C_{s,Dal} (corrected)')
+plot(reltime, nodes.Dal.Cs, '.-', 'color', dal_sample_clr, 'DisplayName', 'C_{s,Dal} (corrected)')
 hold on
-plot(datetime, nodes.Dal.Cc, '-.', 'color', dal_sample_clr, 'DisplayName', 'Calculated C_{c,Dal}(t)')
-plot(datetime, nodes.MIT.Cs, '.-', 'color', mit_sample_clr, 'DisplayName', 'C_{s,MIT} (corrected)')
-plot(datetime, nodes.MIT.Cc, '-.', 'color', mit_sample_clr, 'DisplayName', 'Calculated C_{c,MIT}(t)')
-plot(datetime(ind_t0), nodes.Dal.Cs(ind_t0), 'ok', 'MarkerSize', 8, 'DisplayName', 'Initial Conditions')
-lgd = legend('show','location','north');
+plot(reltime, nodes.Dal.Cc, '-.', 'color', dal_sample_clr, 'DisplayName', 'Calculated C_{c,Dal}(t)')
+plot(reltime, nodes.MIT.Cs, '.-', 'color', mit_sample_clr, 'DisplayName', 'C_{s,MIT} (corrected)')
+plot(reltime, nodes.MIT.Cc, '-.', 'color', mit_sample_clr, 'DisplayName', 'Calculated C_{c,MIT}(t)')
+plot(reltime(ind_t0), nodes.Dal.Cs(ind_t0), 'ok', 'MarkerSize', 8, 'DisplayName', 'Initial Conditions')
+xlim([x1 x2])
+ylim([y1 y2])
+lgd = legend('show','location','northeast');
 lgd.NumColumns = 3;
-xlabel('Local Time')
-ylabel('CO_2 Concentration (ppm)')
+lgd.FontSize = lgdsize;
+xlabel('Hours Elapsed','FontSize',lblsize)
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
 grid on; box on
+ax = gca;
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+
+% Optional save figure
+cd(fig_path)
+exportgraphics(gcf,'compare_Cs_Cc.png','Padding','tight')
+savefig(gcf,'compare_Cs_Cc.fig')
 
 % disp('Press enter to continue to next plot')
 % pause
 %
-figure,clf
-plot(nodes.Dal.Cs, nodes.Dal.Cc, '.', 'Color', dal_sample_clr, 'DisplayName', 'Dal')
-hold on
-plot(nodes.MIT.Cs, nodes.MIT.Cc, '.', 'Color', mit_sample_clr, 'DisplayName', 'MIT')
-currentLimits = [xlim ylim];
-minLimit = min(currentLimits);
-maxLimit = max(currentLimits);
-plot([minLimit maxLimit], [minLimit maxLimit], '--k', 'DisplayName', '1:1 Reference Line')
-legend('show','location','north')
-xlabel('C_s (ppm)')
-ylabel('C_c(t) (ppm)')
-axis square
+% figure,clf
+% plot(nodes.Dal.Cs, nodes.Dal.Cc, '.', 'Color', dal_sample_clr, 'DisplayName', 'Dal')
+% hold on
+% plot(nodes.MIT.Cs, nodes.MIT.Cc, '.', 'Color', mit_sample_clr, 'DisplayName', 'MIT')
+% currentLimits = [xlim ylim];
+% minLimit = min(currentLimits);
+% maxLimit = max(currentLimits);
+% plot([minLimit maxLimit], [minLimit maxLimit], '--k', 'DisplayName', '1:1 Reference Line')
+% legend('show','location','northeast')
+% xlabel('C_s (ppm)','FontSize',lblsize)
+% ylabel('C_c(t) (ppm)','FontSize',lblsize)
+% axis square
 %%
 % -------------------------------------------------------------------------
 % Calculate fc, fw, fwt and compare with PO water-inventory flux
 % -------------------------------------------------------------------------
-% For converting from ppm m 2-1 --> umol m-2 s-1
+% For converting from ppm m s-1 --> umol m-2 s-1
 R = 8.314;                            % (J mol-1 K-1)
 Tair = TT_5min.air_T + 273.15;        % (K)
 P_Pa = TT_5min.miniATM_air_Pmbar*100; % (Pa)
@@ -356,41 +473,53 @@ end
 % Smooth the flux from PO water-inventory method for comparison
 fwPO = fwPO_ppm .* P_Pa ./ (R * Tair);
 flux_PO_smooth = smoothdata(fwPO,"movmean",5);
-%%
+
 figure,clf
-t = tiledlayout(2,1,'TileSpacing','compact');
+t = tiledlayout(2,1,'TileSpacing','tight');
 
 ax1 = nexttile;
 yline(0,'k','LineWidth',2,'HandleVisibility','off','Layer','bottom')
 hold on
-plot(datetime, nodes.Dal.fc, '-', 'Color', dal_sample_clr, 'DisplayName', '$f_{c,Dal}$ (Eq. 10)')
-% plot(datetime, nodes.Dal.fw, '.-', 'Color', rgb('OrangeRed'), 'DisplayName', '$f_w$ (Eq. 19)')
-% plot(datetime, nodes.Dal.fwt, '.-', 'Color', rgb('Goldenrod'), 'DisplayName', '$f_w^\dagger$ (Eq. 24)')
-plot(datetime, nodes.Dal.fw, '--', 'Color', dal_sample_clr, 'DisplayName', '$f_{w,Dal}$ (Eq. 19)')
-plot(datetime, nodes.Dal.fwt, ':', 'Color', dal_sample_clr, 'DisplayName', '$f_{w,Dal}^\dagger$ (Eq. 24)')
-plot(datetime, flux_PO_smooth, '-', 'Color', miniATM_water_clr, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$')
+plot(reltime, nodes.Dal.fc, '-', 'Color', dal_sample_clr, 'DisplayName', '$f_{c,Dal}$ (Eq. 10)')
+plot(reltime, nodes.Dal.fw, '--', 'Color', dal_sample_clr, 'DisplayName', '$f_{w,Dal}$ (Eq. 19)')
+plot(reltime, nodes.Dal.fwt, ':', 'Color', dal_sample_clr, 'DisplayName', '$f_{w,Dal}^\dagger$ (Eq. 24)')
+plot(reltime, flux_PO_smooth, '-', 'Color', miniATM_water_clr, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$')
+xlim([x1 x2])
+ylim([-0.8 0.2])
 xticklabels({})
 lgd = legend('show','location','south','interpreter','latex');
 lgd.NumColumns = 2;
+lgd.FontSize = lgdsize;
 grid on; box on
+ax = gca;
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
 
 ax2 = nexttile;
 yline(0,'k','LineWidth',2,'HandleVisibility','off','Layer','bottom')
 hold on
-plot(datetime, nodes.MIT.fc, '-', 'Color', mit_sample_clr, 'DisplayName', '$f_{c,MIT}$ (Eq. 10)')
-% plot(datetime, nodes.MIT.fw, '.-', 'Color', rgb('OrangeRed'), 'DisplayName', '$f_w$ (Eq. 19)')
-% plot(datetime, nodes.MIT.fwt, '.-', 'Color', rgb('Goldenrod'), 'DisplayName', '$f_w^\dagger$ (Eq. 24)')
-plot(datetime, nodes.MIT.fw, '--', 'Color', mit_sample_clr, 'DisplayName', '$f_{w,MIT}$ (Eq. 19)')
-plot(datetime, nodes.MIT.fwt, ':', 'Color', mit_sample_clr, 'DisplayName', '$f_{w,MIT}^\dagger$ (Eq. 24)')
-plot(datetime, flux_PO_smooth, '-', 'Color', miniATM_water_clr, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$')
-
-xlabel('Local Time')
+plot(reltime, nodes.MIT.fc, '-', 'Color', mit_sample_clr, 'DisplayName', '$f_{c,MIT}$ (Eq. 10)')
+plot(reltime, nodes.MIT.fw, '--', 'Color', mit_sample_clr, 'DisplayName', '$f_{w,MIT}$ (Eq. 19)')
+plot(reltime, nodes.MIT.fwt, ':', 'Color', mit_sample_clr, 'DisplayName', '$f_{w,MIT}^\dagger$ (Eq. 24)')
+plot(reltime, flux_PO_smooth, '-', 'Color', miniATM_water_clr, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$')
+xlabel('Hours Elapsed','FontSize',lblsize)
 lgd = legend('show','location','south','interpreter','latex');
 lgd.NumColumns = 2;
+lgd.FontSize = lgdsize;
 grid on; box on
-linkaxes([ax1 ax2], 'y')
-ylabel(t, 'Flux (\mumol m^{-2} s^{-1})','FontSize',14)
+ax = gca;
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+xlim([x1 x2])
+ylim([-0.8 0.2])
+linkaxes([ax1 ax2], 'x', 'y')
+ax2.XTick = ax1.XTick;
+ylabel(t, 'Flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
 
+% Optional save figure
+cd(fig_path)
+exportgraphics(gcf,'compare_fluxes.png','Padding','tight')
+savefig(gcf,'compare_fluxes.fig')
 
 %%
 % -------------------------------------------------------------------------
@@ -435,15 +564,18 @@ for fn = fieldnames(nodes)'
 end
 
 % figure,clf
-% plot(datetime, nodes.Dal.fw_total, '--', 'color', dal_sample_clr, 'DisplayName','$f_{w,Dal} \cdot A$')
+% plot(reltime, nodes.Dal.fw_total, '--', 'color', dal_sample_clr, 'DisplayName','$f_{w,Dal} \cdot A$')
 % hold on
-% plot(datetime, nodes.MIT.fw_total, '--', 'color', mit_sample_clr, 'DisplayName','$f_{w,MIT} \cdot A$')
-% plot(datetime(1:end-1), -dNsmooth_dt, '-', 'color', miniATM_water_clr, 'DisplayName', '$\frac{-dN_{PO}}{dt}$')
+% plot(reltime, nodes.MIT.fw_total, '--', 'color', mit_sample_clr, 'DisplayName','$f_{w,MIT} \cdot A$')
+% plot(reltime(1:end-1), -dNsmooth_dt, '-', 'color', miniATM_water_clr, 'DisplayName', '$\frac{-dN_{PO}}{dt}$')
 % yline(0,'k','linewidth',2,'HandleVisibility','off')
 % xlabel('Local Time')
-% ylabel('Net CO_2 exchange rate (\mumol s^{-1})','FontSize',14)
+% ylabel('Net CO_2 exchange rate (\mumol s^{-1})','FontSize',lblsize)
 % legend('show','location','south','interpreter','latex')
 % grid on; box on
+% ax = gca;
+% ax.XMinorGrid = 'on';
+% ax.XAxis.MinorTick = 'on';
 
 figure,clf
 t = tiledlayout(2,1,'TileSpacing','tight');
@@ -451,27 +583,43 @@ t = tiledlayout(2,1,'TileSpacing','tight');
 ax1 = nexttile;
 yline(0,'k','LineWidth',2,'HandleVisibility','off','Layer','bottom')
 hold on
-plot(datetime, nodes.Dal.fc_total, '-', 'Color', dal_sample_clr, 'DisplayName', '$f_{c,Dal} \cdot A$')
-plot(datetime, nodes.Dal.fw_total, '--', 'Color', dal_sample_clr, 'DisplayName', '$f_{w,Dal} \cdot A$')
-plot(datetime, nodes.Dal.fwt_total, '-.', 'Color', dal_sample_clr, 'DisplayName', '$f_{w,Dal}^\dagger \cdot A$')
-plot(datetime(1:end-1), -dNsmooth_dt, '-', 'color', miniATM_water_clr, 'DisplayName', '$\frac{-dN_{PO}}{dt}$')
-% ylabel('Net CO_2 exchange rate (\mumol s^{-1})','FontSize',14)
+plot(reltime, nodes.Dal.fc_total, '-', 'Color', dal_sample_clr, 'DisplayName', '$f_{c,Dal} \cdot A$')
+plot(reltime, nodes.Dal.fw_total, '--', 'Color', dal_sample_clr, 'DisplayName', '$f_{w,Dal} \cdot A$')
+plot(reltime, nodes.Dal.fwt_total, '-.', 'Color', dal_sample_clr, 'DisplayName', '$f_{w,Dal}^\dagger \cdot A$')
+plot(reltime(1:end-1), -dNsmooth_dt, '-', 'color', miniATM_water_clr, 'DisplayName', '$\frac{-dN_{PO}}{dt}$')
+xlim([x1 x2])
+ylim([-0.2 0.05])
 xticklabels({})
 lgd = legend('show','location','south','interpreter','latex');
 lgd.NumColumns = 2;
-grid on; box on
+lgd.FontSize = lgdsize;
+grid on; box on;
+ax = gca;
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
 
 ax2 = nexttile;
 yline(0,'k','LineWidth',2,'HandleVisibility','off','Layer','bottom')
 hold on
-plot(datetime, nodes.MIT.fc_total, '-', 'Color', mit_sample_clr, 'DisplayName', '$f_{c,MIT} \cdot A$')
-plot(datetime, nodes.MIT.fw_total, '--', 'Color', mit_sample_clr, 'DisplayName', '$f_{w,MIT} \cdot A$')
-plot(datetime, nodes.MIT.fwt_total, '-.', 'Color', mit_sample_clr, 'DisplayName', '$f_{w,MIT}^\dagger \cdot A$')
-plot(datetime(1:end-1), -dNsmooth_dt, '-', 'color', miniATM_water_clr, 'DisplayName', '$\frac{-dN_{PO}}{dt}$')
-
-xlabel('Local Time')
+plot(reltime, nodes.MIT.fc_total, '-', 'Color', mit_sample_clr, 'DisplayName', '$f_{c,MIT} \cdot A$')
+plot(reltime, nodes.MIT.fw_total, '--', 'Color', mit_sample_clr, 'DisplayName', '$f_{w,MIT} \cdot A$')
+plot(reltime, nodes.MIT.fwt_total, '-.', 'Color', mit_sample_clr, 'DisplayName', '$f_{w,MIT}^\dagger \cdot A$')
+plot(reltime(1:end-1), -dNsmooth_dt, '-', 'color', miniATM_water_clr, 'DisplayName', '$\frac{-dN_{PO}}{dt}$')
+xlim([x1 x2])
+ylim([-0.2 0.05])
+xlabel('Hours Elapsed','FontSize',lblsize)
 lgd = legend('show','location','south','interpreter','latex');
 lgd.NumColumns = 2;
+lgd.FontSize = lgdsize;
 grid on; box on
-linkaxes([ax1 ax2], 'y')
-ylabel(t, 'Net CO_2 exchange rate (\mumol s^{-1})','FontSize',14)
+ax = gca;
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+linkaxes([ax1 ax2], 'x', 'y')
+ax2.XTick = ax1.XTick;
+ylabel(t, 'Net CO_2 exchange rate (\mumol s^{-1})','FontSize',lblsize)
+
+% Optional save figure
+cd(fig_path)
+exportgraphics(gcf,'budget.png','Padding','tight')
+savefig(gcf,'budget.fig')

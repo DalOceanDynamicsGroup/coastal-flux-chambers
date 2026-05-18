@@ -241,7 +241,7 @@ For the Reference Node, substitute Eq. \ref{eq:4} into Eq. \ref{eq:3}:
 	V_m \frac{\partial C_r}{\partial t} = -S_a k_a (C_r - C_a)
 \end{equation}
 
-Combine the two time derivatives (Eq. \ref{eq:5} and \ref{eq:6}). This removes the dependence on $C_a$ and any bias from atmospheric variability, as the Reference Node acts as a real-time correction for atmospheric exchange.
+Combine the two time derivatives (Eq. \ref{eq:7} and \ref{eq:8}). This removes the dependence on $C_a$ and any bias from atmospheric variability, as the Reference Node acts as a real-time correction for atmospheric exchange.
 \begin{equation} \label{eq:9}
 	V_m \left(\frac{\partial C_s}{\partial t} - \frac{\partial C_r}{\partial t}\right) = S_c f_c - S_a k_a (C_s - C_r) 
 \end{equation}
@@ -276,7 +276,7 @@ Fick's Law gives the CO$_2$ flux rate through the Sample Node bottom membrane:
 	f_c = k_c(C_c - C_s)
 \end{equation}
 
-Substituting in Eqs. \ref{eq:10} and \ref{eq:11}, the equation governing the CO$_2$ concentration in the collar (Eq. \ref{eq:9}) can be rewritten as
+Substituting in Eqs. \ref{eq:12} and \ref{eq:13}, the equation governing the CO$_2$ concentration in the collar (Eq. \ref{eq:11}) can be rewritten as
 \begin{equation} \label{eq:14}
 	\frac{\partial C_c}{\partial t} + \left( \frac{S_w k_w}{V_c} + \frac{S_c k_c}{V_c} \right) C_c = \frac{S_w k_w}{V_c} C_w + \frac{S_c k_c}{V_c} C_s
 \end{equation}
@@ -287,7 +287,7 @@ If we define the water-to-collar and  collar-to-chamber transfer rate constants 
 	\frac{\partial C_c}{\partial t} + ( \kappa_w + \kappa_c) C_c = \kappa_w C_w + \kappa_c C_s
 \end{equation}
 
-The general solution of the first-order, non-homogeneous linear differential equation (Eq. \ref{eq:13}) is given by the sum of the homogeneous and particular solutions:
+The general solution of the first-order, non-homogeneous linear differential equation (Eq. \ref{eq:15}) is given by the sum of the homogeneous and particular solutions:
 
 \begin{equation} \label{eq:16}
 	C_c(t) = Ae^{-(\kappa_w + \kappa_c)t} + \frac{\kappa_w C_w + \kappa_c C_s}{\kappa_w + \kappa_c}
