@@ -28,8 +28,8 @@ BASE_DIR = r"C:\Data\FluxChamber" # specify path to the data folder
 # -----------------------
 # Reference Node Configuration
 # -----------------------
-REF_ADDRESS  = 3
-REF_PORT     = 'COM7'  # or e.g., 'COM4' on Windows
+REF_ADDRESS  = 1
+REF_PORT     = 'COM4'  # or e.g., 'COM4' on Windows
 REF_BAUDRATE = 19200
 REF_PARITY   = 'N'
 REF_STOPBITS = 2
@@ -39,8 +39,8 @@ REF_TIMEOUT  = 1
 # -----------------------
 # Sample Node Configuration
 # -----------------------
-NOD_ADDRESS  = 4
-NOD_PORT     = 'COM6'  # or e.g., 'COM5' on Windows
+NOD_ADDRESS  = 2
+NOD_PORT     = 'COM4'  # or e.g., 'COM5' on Windows
 NOD_BAUDRATE = 19200
 NOD_PARITY   = 'N'
 NOD_STOPBITS = 2
@@ -91,7 +91,7 @@ def poll_sensor(client, slave_address):
 
     Adjust this function's logic/decoding to match each sensor’s register map.
     """
-    response = client.read_holding_registers(0, count=8, slave=slave_address)
+    response = client.read_holding_registers(0, count=8, device_id=slave_address)
 
     if response.isError():
         # If there's a Modbus error/timeout, print it
@@ -154,18 +154,18 @@ def main():
         """
 
         # Initialize ports
-        ser_PO = serial.Serial(SERIAL_PORT_PO,BAUD_RATE_PO)
-        ser_TEMP = serial.Serial(SERIAL_PORT_TEMP,BAUD_RATE_TEMP)
-        ser_NTK = serial.Serial(SERIAL_PORT_NTK,BAUD_RATE_NTK)
+        #ser_PO = serial.Serial(SERIAL_PORT_PO,BAUD_RATE_PO)
+        #ser_TEMP = serial.Serial(SERIAL_PORT_TEMP,BAUD_RATE_TEMP)
+        #ser_NTK = serial.Serial(SERIAL_PORT_NTK,BAUD_RATE_NTK)
 
         # Create and start threads
-        thread_PO = threading.Thread(target=read_from_port, args=(SERIAL_PORT_PO,), daemon=True)
-        thread_TEMP = threading.Thread(target=read_from_port, args=(SERIAL_PORT_TEMP,), daemon=True)
-        thread_NTK = threading.Thread(target=read_from_port, args=(SERIAL_PORT_NTK,), daemon=True)
+        #thread_PO = threading.Thread(target=read_from_port, args=(SERIAL_PORT_PO,), daemon=True)
+        #thread_TEMP = threading.Thread(target=read_from_port, args=(SERIAL_PORT_TEMP,), daemon=True)
+        #thread_NTK = threading.Thread(target=read_from_port, args=(SERIAL_PORT_NTK,), daemon=True)
 
-        thread_PO.start()
-        thread_TEMP.start()
-        thread_NTK.start()
+        #thread_PO.start()
+        #thread_TEMP.start()
+        #thread_NTK.start()
 
         print("============================================")
         print("Initializing connection to the eosFD nodes:")
@@ -182,14 +182,14 @@ def main():
             timeout=REF_TIMEOUT
         )
         if not refClient.connect():
-            print(f"Unable to open {REF_PORT}")
+            print(f"Unable to open ref {REF_PORT}")
         else:
-            print(f"Connected to {REF_PORT} (Address = {REF_ADDRESS})")
+            print(f"Connected to ref {REF_PORT} (Address = {REF_ADDRESS})")
 
         # ------------------------------------
         # Create Modbus Client 2 for Node
         # ------------------------------------
-
+        """
         nodeClient = ModbusClient(
             # method='rtu',
             port=NOD_PORT,
@@ -200,10 +200,10 @@ def main():
             timeout=NOD_TIMEOUT
         )
         if not nodeClient.connect():
-            print(f"Unable to open {NOD_PORT}")
+            print(f"Unable to open node {NOD_PORT}")
         else:
-            print(f"Connected to {NOD_PORT} (Address = {NOD_ADDRESS})")
-
+            print(f"Connected to {NOD_PORT} node (Address = {NOD_ADDRESS})")
+        """ 
         # delay to allow sensor boot time
         time.sleep(5)
 
@@ -232,29 +232,31 @@ def main():
                 # Calculate the elapsed time since the experiment started
                 elapsed_time = time.time() - start_time
 
-                line = SERIAL_PORT_PO.readline().decode('utf-8', errors='replace')
-                PO_data = parse_PO(line)
+                #line = SERIAL_PORT_PO.readline().decode('utf-8', errors='replace')
+                #PO_data = parse_PO(line)
+                PO_data = 'PO_data'
                 # line = SERIAL_PORT_TEMP.readline().decode('utf-8', errors='replace')
                 TEMP_data = "TEMP," #parse_TEMP(line)
                 # line = SERIAL_PORT_NTK.readline().decode('utf-8', errors='replace')
                 NTK_data = "NTK," #parse_NTK(line)
 
                 # write serial data to logfile
-                f.write(f"{PO_data}")
+                #f.write(f"{PO_data}")
                 f.write(f"{TEMP_data}")
                 f.write(f"{NTK_data}")
 
 
                 # Poll reference and sample nodes
                 ref_pCO2_value, ref_temp_value = poll_sensor(refClient, REF_ADDRESS)
-                nod_pCO2_value, nod_temp_value = poll_sensor(nodeClient, NOD_ADDRESS)
+                nod_pCO2_value, nod_temp_value = poll_sensor(refClient, NOD_ADDRESS)
 
                 # create eossense output string
-                EOS_data = "EOS," + str(ref_pCO2_value) + "," + str(ref_temp_value) + "," + str(nod_pCO2_value) + "," + str(nod_temp_value)+","+datetime.strftime()
+                EOS_data = "EOS," + str(ref_pCO2_value) + "," + str(ref_temp_value) + "," + str(nod_pCO2_value) + "," + str(nod_temp_value) + "\n"#+","+datetime.strftime()
 
                 #calculated_flux = NFD_G_CST*((nod_pCO2_value+NFD_NOD_OFFSET)-(ref_pCO2_value+NFD_REF_OFFSET))
 
                 # write eos sense data to logfile
+                print(ref_pCO2_value, nod_pCO2_value)
                 f.write(f"{EOS_data}")
 
                 """ modify to have unique prefix -> FC or something and only write the flux chamber
