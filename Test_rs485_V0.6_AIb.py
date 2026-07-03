@@ -94,7 +94,7 @@ def start_solu_blu(ser):
 
     ser.reset_input_buffer()
     ser.reset_output_buffer()
-
+    time.sleep(1)
     # wake
     ser.write(b'\r')
     time.sleep(1)
@@ -146,6 +146,8 @@ def main():
         time.sleep(2)
 
         start_solu_blu(ser_PO)
+        time.sleep(2)
+
 
         # connect to arduino
         ser_THERM = serial.Serial(
@@ -183,7 +185,7 @@ def main():
                     node = poll_sensor(client, NOD_ADDRESS)
 
                     if ref is None or node is None:
-                        print("⚠ Modbus read failed")
+                        print("⚠ Modbus read failed\n")
                         continue
 
                     ref_pCO2, ref_temp = ref
@@ -212,9 +214,9 @@ def main():
                     # -----------------------
                     print(
                         f"{timestamp} | "
-                        f"REF {ref_pCO2:.1f} ppm | NODE {nod_pCO2:.1f} ppm | "
-                        f"PO: {po_line}"
-                        f"THERM: {therm_line}"
+                        f"REF {ref_pCO2:.1f} ppm | NODE {nod_pCO2:.1f} ppm | \n"
+                        f"PO: {po_line}\n"
+                        f"THERM: {therm_line}\n"
                     )
 
                     # -----------------------
