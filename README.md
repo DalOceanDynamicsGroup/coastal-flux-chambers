@@ -9,6 +9,15 @@ Developing code for the flux chamber, which as a Solu-Blue CO2 sensor (rs-232/48
 ## fluxDrifter
 This is essentially a fork of the code for the flux chamber. The biggest difference is that there is no arduino, just a raspberry pi to log all the data.
 
+## To run python on reboot
+- create service file `sudo nano /etc/systemd/system/fluxchamber.service`
+- reload services list `sudo systemctl daemon-reload`
+- start logging script service `sudo systemctl start fluxchamber.service`
+- check status `sudo systemctl status fluxchamber.service`
+- realtime status `sudo journalctl -u fluxchamber.service -f`
+- stop `sudo systemctl stop fluxchamber.service`
+- restart manually `sudo systemctl restart fluxchamber.service`
+
 ## Notes
 - Raspberry Pi SPI primary bus (SPI0) is 19 (MOSI), 21 (MISO), 23 (SCLK) and for chip select 8 (CS0) and 7 (CS1)
 - Raspberry Pi is 3.3V tolerant for input levels
