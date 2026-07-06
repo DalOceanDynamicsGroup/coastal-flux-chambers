@@ -21,8 +21,8 @@ POLLING_RATE = 1.0
 BASE_DIR = r"/home/dodg/Data/FluxChamber"
 
 # MAX31865 Settings
-RTD_NOMINAL = 100.0      # Change to 1000.0 if using PT1000 probes
-REF_RESISTANCE = 430.0   # Change to 4300.0 if using PT1000 boards
+RTD_NOMINAL = 1000.0      # Change to 1000.0 if using PT1000 probes
+REF_RESISTANCE = 4300.0   # Change to 4300.0 if using PT1000 boards
 RTD_WIRES = 3            # Change to 2 or 4 depending on your probe wires
 
 # -----------------------
@@ -49,21 +49,21 @@ def main():
         # Create shared SPI0 Bus (Pins: SCLK=GPIO11, MOSI=GPIO10, MISO=GPIO9)
         spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
 
-        # Set up separate Chip Select Pins (GPIO 8 and GPIO 7)
-        cs_a = digitalio.DigitalInOut(board.D8)
+        # Set up separate Chip Select Pins (GPIO 25 and GPIO 7)
+        cs_a = digitalio.DigitalInOut(board.D25)
         cs_b = digitalio.DigitalInOut(board.D7)
 
         # Create sensor objects
         sensor_a = adafruit_max31865.MAX31865(
             spi, cs_a, 
             rtd_nominal=RTD_NOMINAL, 
-            ref_resistance=REF_RESISTANCE, 
+            ref_resistor=REF_RESISTANCE, 
             wires=RTD_WIRES
         )
         sensor_b = adafruit_max31865.MAX31865(
             spi, cs_b, 
             rtd_nominal=RTD_NOMINAL, 
-            ref_resistance=REF_RESISTANCE, 
+            ref_resistor=REF_RESISTANCE, 
             wires=RTD_WIRES
         )
         print("Hardware ready!")

@@ -10,7 +10,7 @@ Raspberry Pi SPI0 Connection Table (Shared Bus)
 | CLK (SCLK)         | GPIO 11 (SPI0 SCLK)       | Physical Pin 23     | Connect          | Connect          |
 | SDO (MISO)         | GPIO 9 (SPI0 MISO)        | Physical Pin 21     | Connect          | Connect          |
 | SDI (MOSI)         | GPIO 10 (SPI0 MOSI)       | Physical Pin 19     | Connect          | Connect          |
-| CS (Chip Select)   | GPIO 8 (SPI0 CE0)         | Physical Pin 24     | CONNECT HERE     | Do Not Connect   |
+| CS (Chip Select)   | GPIO 25 ()                | Physical Pin 22     | CONNECT HERE     | Do Not Connect   |
 | CS (Chip Select)   | GPIO 7 (SPI0 CE1)         | Physical Pin 26     | Do Not Connect   | CONNECT HERE     |
 +--------------------+---------------------------+---------------------+------------------+------------------+
 

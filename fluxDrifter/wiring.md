@@ -7,7 +7,7 @@
 | **CLK** (SCLK) | GPIO 11 (SPI0 SCLK) | Physical Pin 23 | Connect | Connect |
 | **SDO** (MISO) | GPIO 9 (SPI0 MISO) | Physical Pin 21 | Connect | Connect |
 | **SDI** (MOSI) | GPIO 10 (SPI0 MOSI) | Physical Pin 19 | Connect | Connect |
-| **CS** (Chip Select) | **GPIO 8** (SPI0 CE0) | Physical Pin 24 | **Connect Here** | Do Not Connect |
+| **CS** (Chip Select) | **GPIO 25** () | Physical Pin 22 | **Connect Here** | Do Not Connect |
 | **CS** (Chip Select) | **GPIO 7** (SPI0 CE1) | Physical Pin 26 | Do Not Connect | **Connect Here** |
 
 *Note: You do not need to wire the **3V** or **RDY** pins on the Adafruit breakout boards for this configuration.*

@@ -182,13 +182,13 @@ def main():
             sensor_a = adafruit_max31865.MAX31865(
                 spi, cs_a, 
                 rtd_nominal=RTD_NOMINAL, 
-                ref_resistance=REF_RESISTANCE, 
+                ref_resistor=REF_RESISTANCE, 
                 wires=RTD_WIRES
             )
             sensor_b = adafruit_max31865.MAX31865(
                 spi, cs_b, 
                 rtd_nominal=RTD_NOMINAL, 
-                ref_resistance=REF_RESISTANCE, 
+                ref_resistor=REF_RESISTANCE, 
                 wires=RTD_WIRES
             )
             print("MAX31865 boards successfully initialized")
