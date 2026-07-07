@@ -1,6 +1,7 @@
 [Unit]
 Description=Flux Chamber Data Logger Service
-After=network.target
+After=network.target local-fs.target basic.target
+Wants=network.target
 
 [Service]
 # Run the script under your main user account so it has correct file permissions
@@ -12,6 +13,9 @@ Environment=PYTHONUNBUFFERED=1
 
 # Path to your python executable and script
 ExecStart=/usr/bin/python3 /home/dodg/Data/FluxChamber/flux_logger.py
+
+# Give the Pi an extra 5 seconds on boot before trying to start the script
+ExecStartPre=/bin/sleep 5
 
 # Restart the script automatically if it fails or crashes
 Restart=on-failure

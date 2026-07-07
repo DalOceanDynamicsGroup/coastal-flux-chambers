@@ -86,7 +86,7 @@ def main():
                 now = datetime.now()
                 ms = now.microsecond // 1000
                 timestamp = now.strftime("%Y-%m-%d %H:%M:%S.") + f"{ms:03d}"
-                elapsed = time.time() - start_time
+                # elapsed = time.time() - start_time
 
                 # Initialize readings to NaN in case a read fails
                 temp_a = float('nan')
@@ -111,7 +111,7 @@ def main():
                 print(f"{timestamp} | THERM: {therm_line}")
 
                 # Save directly to your data file
-                f.write(f"THERM,{timestamp},{elapsed:.2f},{therm_line}\n")
+                f.write(f"THERM,{timestamp},{therm_line}\n")
                 f.flush()
 
                 # Maintain steady execution loop timing
