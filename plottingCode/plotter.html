@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Raw Data Plotter & Parser</title>
+    <!-- Load Chart.js from a robust, standard CDN provider -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" crossorigin="anonymous"></script>
+
+    <style>
+        body { font-family: sans-serif; margin: 30px; background-color: #f4f4f9; color: #333; }
+        h1 { margin-bottom: 25px; color: #2c3e50; }
+        .controls { display: flex; gap: 20px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .control-group { display: flex; flex-direction: column; }
+        label { font-weight: bold; margin-bottom: 5px; font-size: 14px; color: #555; }
+        select, input { padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; background-color: #fff; }
+        select:disabled, input:disabled { background-color: #e9ecef; cursor: not-allowed; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        canvas { max-height: 400px; }
+        
+        .table-title { margin-top: 30px; font-size: 18px; font-weight: bold; color: #2c3e50; }
+        .table-container { 
+            max-height: 380px; 
+            overflow-y: auto; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            margin-top: 12px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: left; }
+        th, td { padding: 10px 14px; border-bottom: 1px solid #eee; white-space: nowrap; }
+        th { 
+            background-color: #f8f9fa; 
+            color: #495057; 
+            position: sticky; 
+            top: 0; 
+            z-index: 10; 
+            border-bottom: 2px solid #dee2e6; 
+        }
+        tr:hover { background-color: #f1f3f5; }
+    </style>
+</head>
+<body>
+
+    <h1>Raw Data Plotter & Parser</h1>
+    
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="fileInput">1. Upload Data File</label>
+                <input type="file" id="fileInput" accept=".txt,.csv">
+            </div>
+            <div class="control-group">
+                <label for="prefixSelect">2. Choose Prefix Line</label>
+                <select id="prefixSelect" disabled>
+                    <option value="">-- Select Prefix --</option>
+                    <option value="PO">PO</option>
+                    <option value="EOS">EOS</option>
+                    <option value="THERM">THERM</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="xAxisSelect">3. X-Axis (Labels)</label>
+                <select id="xAxisSelect" disabled>
+                    <option value="">-- Choose X Column --</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="yAxisSelect">4. Y-Axis (Values)</label>
+                <select id="yAxisSelect" disabled>
+                    <option value="">-- Choose Y Column --</option>
+                </select>
+            </div>
+        </div>
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <div id="tableSection" style="display: none;">
+        <div class="table-title" id="tableHeaderTitle">Data Table View</div>
+        <div class="table-container">
+            <table id="dataTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        let masterData = { PO: [], EOS: [], THERM: [] };
+        let chartInstance = null;
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = e.target.files; 
+            if (!files || files.length === 0) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                parseFileContents(event.target.result);
+            };
+            reader.readAsText(files[0]); // Targets the actual file item correctly now
+        });
+
+        function parseFileContents(text) {
+            masterData = { PO: [], EOS: [], THERM: [] };
+            const lines = text.split(/\r?\n/);
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                if (trimmed.startsWith('PO,')) {
+                    const parts = trimmed.split(',').map(p => p.trim());
+                    if (parts.length > 2) { masterData.PO.push(parts); }
+                } 
+                else if (trimmed.startsWith('EOS,')) {
+                    const parts = trimmed.split(',').map(p => p.trim());
+                    if (parts.length > 1) { masterData.EOS.push(parts); }
+                } 
+                else if (trimmed.startsWith('THERM,')) {
+                    const numberPattern = /\d+\.\d+/g;
+                    const matches = trimmed.match(numberPattern);
+                    if (matches && matches.length > 0) {
+                        const cleanedRow = ['THERM'].concat(matches);
+                        masterData.THERM.push(cleanedRow);
+                    }
+                }
+            });
+
+            document.getElementById('prefixSelect').disabled = false;
+            resetFiltersAndGraph();
+        }
+
+        document.getElementById('prefixSelect').addEventListener('change', updateDropdownsAndTable);
+        document.getElementById('xAxisSelect').addEventListener('change', drawGraph);
+        document.getElementById('yAxisSelect').addEventListener('change', drawGraph);
+
+        function resetFiltersAndGraph() {
+            document.getElementById('prefixSelect').value = "";
+            document.getElementById('xAxisSelect').innerHTML = '<option value="">-- Choose X Column --</option>';
+            document.getElementById('yAxisSelect').innerHTML = '<option value="">-- Choose Y Column --</option>';
+            document.getElementById('xAxisSelect').disabled = true;
+            document.getElementById('yAxisSelect').disabled = true;
+            document.getElementById('tableSection').style.display = 'none';
+            if (chartInstance) chartInstance.destroy();
+        }
+
+        function updateDropdownsAndTable() {
+            const prefix = document.getElementById('prefixSelect').value;
+            const xAxisSelect = document.getElementById('xAxisSelect');
+            const yAxisSelect = document.getElementById('yAxisSelect');
+            const tableSection = document.getElementById('tableSection');
+
+            xAxisSelect.innerHTML = '<option value="">-- Choose X Column --</option>';
+            yAxisSelect.innerHTML = '<option value="">-- Choose Y Column --</option>';
+            xAxisSelect.disabled = true;
+            yAxisSelect.disabled = true;
+            tableSection.style.display = 'none';
+
+            if (chartInstance) chartInstance.destroy();
+            if (!prefix || masterData[prefix].length === 0) return;
+
+            let maxCols = 0;
+            masterData[prefix].forEach(row => {
+                if (row.length > maxCols) maxCols = row.length;
+            });
+
+            const optIndexX = document.createElement('option');
+            optIndexX.value = "ROW_INDEX";
+            optIndexX.textContent = "Row Index (1, 2, 3...)";
+            xAxisSelect.appendChild(optIndexX);
+
+            const colNames = [];
+            for (let i = 0; i < maxCols; i++) {
+                if (i === 0) colNames.push('Col 0 (Prefix)');
+                else if (prefix === 'THERM') {
+                    if (i === 1) colNames.push('Col 1 (Air Temp)');
+                    else if (i === 2) colNames.push('Col 2 (Water Temp)');
+                    else colNames.push(`Col ${i}`);
+                } 
+                else if (prefix === 'EOS') {
+                    if (i === 1) colNames.push('Col 1 (Timestamp)');
+                    else colNames.push(`Col ${i}`);
+                } 
+                else { colNames.push(`Col ${i}`); }
+            }
+
+            colNames.forEach((name, index) => {
+                const optX = document.createElement('option');
+                optX.value = index; optX.textContent = name;
+                xAxisSelect.appendChild(optX);
+
+                const optY = document.createElement('option');
+                optY.value = index; optY.textContent = name;
+                yAxisSelect.appendChild(optY);
+            });
+
+            xAxisSelect.disabled = false;
+            yAxisSelect.disabled = false;
+            renderTableGrid(prefix, colNames);
+        }
+
+        function renderTableGrid(prefix, colNames) {
+            const tHead = document.getElementById('tableHead');
+            const tBody = document.getElementById('tableBody');
+            document.getElementById('tableHeaderTitle').textContent = `Filtered Data Table: "${prefix}" (${masterData[prefix].length} clean rows parsed)`;
+
+            tHead.innerHTML = `<tr><th>Index</th>${colNames.map(name => `<th>${name}</th>`).join('')}</tr>`;
+
+            let rowsHtml = '';
+            masterData[prefix].forEach((row, idx) => {
+                rowsHtml += '<tr>';
+                rowsHtml += `<td><strong>${idx + 1}</strong></td>`;
+                for (let i = 0; i < colNames.length; i++) {
+                    rowsHtml += `<td>${row[i] !== undefined ? row[i] : ''}</td>`;
+                }
+                rowsHtml += '</tr>';
+            });
+            tBody.innerHTML = rowsHtml;
+            document.getElementById('tableSection').style.display = 'block';
+        }
+
+        function drawGraph() {
+            const prefix = document.getElementById('prefixSelect').value;
+            const xValue = document.getElementById('xAxisSelect').value;
+            const yValue = document.getElementById('yAxisSelect').value;
+            const ctx = document.getElementById('myChart').getContext('2d');
+
+            if (chartInstance) chartInstance.destroy();
+            if (!prefix || !xValue || !yValue) return;
+
+            if (typeof Chart === 'undefined') {
+                alert("Chart engine is currently blocked by your network connection. However, your data table below is fully interactive!");
+                return;
+            }
+
+            const yIndex = parseInt(yValue);
+            let xLabels = [];
+
+            if (xValue === "ROW_INDEX") {
+                xLabels = masterData[prefix].map((_, idx) => `Point ${idx + 1}`);
+            } else {
+                const xIndex = parseInt(xValue);
+                xLabels = masterData[prefix].map(row => row[xIndex] !== undefined ? row[xIndex] : "");
+            }
+
+            const yValues = masterData[prefix].map(row => {
+                const val = row[yIndex];
+                return (val && !isNaN(val)) ? Number(val) : (val || "");
+            });
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: xLabels,
+                    datasets: [{
+                        label: `${prefix} Data Trend`,
+                        data: yValues,
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: false } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
