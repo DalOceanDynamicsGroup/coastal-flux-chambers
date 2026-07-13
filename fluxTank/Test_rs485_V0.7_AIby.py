@@ -249,7 +249,8 @@ def main():
                     # put the eos print and log variable creation in a try block
 
                     now = datetime.now()
-                    timestampTherm = now.strftime("%Y-%m-%d %H:%M:%S")
+                    ms = now.microsecond // 1000
+                    timestampTherm = now.strftime("%Y-%m-%d %H:%M:%S.") + f"{ms:03d}"
 
                     # -----------------------
                     # PRINT

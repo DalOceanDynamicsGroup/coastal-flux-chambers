@@ -300,7 +300,8 @@ def main():
                         print("Error reading MAX31865 Sensor B (GPIO7):", e)
 
                     now = datetime.now()
-                    timestampTHERM = now.strftime("%Y-%m-%d %H:%M:%S")
+                    ms = now.microsecond // 1000
+                    timestampTHERM = now.strftime("%Y-%m-%d %H:%M:%S.") + f"{ms:03d}"
 
                     # Format the custom string for both temperatures on one line
                     therm_line = f"{timestampTHERM},{temp_a:.2f},{temp_b:.2f}"
