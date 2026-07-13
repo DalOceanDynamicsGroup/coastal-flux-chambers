@@ -13,12 +13,6 @@ from pymodbus.client import ModbusSerialClient as ModbusClient
 import serial
 import struct
 
-# New imports for Adafruit MAX31865 SPI boards
-import board
-import busio
-import digitalio
-import adafruit_max31865
-
 print("TODO: change udev rules for perma-serial-port!")
 
 # -----------------------
@@ -37,17 +31,9 @@ BAUDRATE = 19200
 PO_PORT = '/dev/ttyUSB0'
 PO_BAUD = 19200
 
-# -----------------------
-# MAX31865 Configuration
-# -----------------------
-# Change to 1000.0 if using PT1000 probes
-RTD_NOMINAL = 1000.0   
-
-# Change to 4300.0 if your board is modified for PT1000
-REF_RESISTANCE = 4300.0 
-
-# Change to 2 or 4 if your probes are not 3-wire
-RTD_WIRES = 3         
+# Arduino T-logger/transmitter
+THERM_PORT = '/dev/ttyACM0'
+THERM_BAUD = 115200
 
 # -----------------------
 # File setup
@@ -166,81 +152,57 @@ def start_solu_blu(ser):
 # MAIN
 # -----------------------
 def main():
-    # Keep track of hardware handles so we can clean up if needed
-    client = None
-    ser_PO = None
-    
     try:
         # --- Modbus client ---
-        try:
-            client = ModbusClient(
-                port=MODBUS_PORT,
-                baudrate=BAUDRATE,
-                parity='N',
-                stopbits=2,
-                bytesize=8,
-                timeout=1
-            )
-            if not client.connect():
-                print("Warning: Failed to connect to eosFD Modbus client")
-            else:
-                print("Connected to eosFD")
-        except Exception as e:
-            print("Error initializing Modbus client:", e)
+        client = ModbusClient(
+            port=MODBUS_PORT,
+            baudrate=BAUDRATE,
+            parity='N',
+            stopbits=2,
+            bytesize=8,
+            timeout=1
+        )
+
+        if not client.connect():
+            raise Exception("Failed to connect to eosFD")
+
+        print("Connected to eosFD")
+
+        # wrap, in unique try blocks both solublue serial and therm serial
 
         # --- Solu-Blu serial ---
-        try:
-            ser_PO = serial.Serial(
-                PO_PORT,
-                PO_BAUD,
+        ser_PO = serial.Serial(
+            PO_PORT,
+            PO_BAUD,
+            bytesize=8,
+            parity='N',
+            stopbits=1,
+            timeout=1
+        )
+
+        print("Connected to Solu-Blu")
+
+        time.sleep(2)
+
+        start_solu_blu(ser_PO)
+        time.sleep(2)
+
+
+        # connect to arduino
+        ser_THERM = serial.Serial(
+                THERM_PORT,
+                THERM_BAUD,
                 bytesize=8,
                 parity='N',
                 stopbits=1,
                 timeout=1
-            )
-            print("Connected to Solu-Blu")
-            time.sleep(2)
-            start_solu_blu(ser_PO)
-            time.sleep(2)
-        except Exception as e:
-            print("Error initializing Solu-Blu Serial:", e)
-
-        # --- MAX31865 Initialization ---
-        print("Initializing MAX31865 boards on SPI0...")
-        try:
-            # Shared SPI0 Bus (Pins: SCLK=GPIO11, MOSI=GPIO10, MISO=GPIO9)
-            spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
-
-            # Assign Chip Select Pins (GPIO 8 and GPIO 7)
-            cs_a = digitalio.DigitalInOut(board.D8)
-            cs_b = digitalio.DigitalInOut(board.D7)
-
-            # Initialize the two sensor instances
-            sensor_a = adafruit_max31865.MAX31865(
-                spi, cs_a, 
-                rtd_nominal=RTD_NOMINAL, 
-                ref_resistor=REF_RESISTANCE, 
-                wires=RTD_WIRES
-            )
-            sensor_b = adafruit_max31865.MAX31865(
-                spi, cs_b, 
-                rtd_nominal=RTD_NOMINAL, 
-                ref_resistor=REF_RESISTANCE, 
-                wires=RTD_WIRES
-            )
-            print("MAX31865 boards successfully initialized")
-        except Exception as e:
-            print("Fatal Error initializing MAX31865 SPI boards:", e)
-            raise e
+        )
+        print("Connected to temperature logger")
 
         start_time = time.time()
 
-        with open(LOGFILE, 'a', encoding='utf-8') as f:
+        with open(LOGFILE, 'a') as f:
             print(f"\nLogging to {LOGFILE}\n")
-
-            f.write(f"SYS, RTD resistance: {RTD_NOMINAL}, ")
-            f.write(f"REF resistance: {REF_RESISTANCE}, ")
-            f.write(f"number of wires: {RTD_WIRES}\n")
 
             while True:
                 loop_start = time.time()
@@ -258,52 +220,36 @@ def main():
                     # -----------------------
                     # EOSENSE
                     # -----------------------
-                    ref_pCO2, ref_temp = 0.0, 0.0
-                    nod_pCO2, nod_temp = 0.0, 0.0
-                    
-                    if client and client.connected:
-                        ref = poll_sensor(client, REF_ADDRESS)
-                        node = poll_sensor(client, NOD_ADDRESS)
+                    ref = poll_sensor(client, REF_ADDRESS)
+                    node = poll_sensor(client, NOD_ADDRESS)
 
-                        if ref is not None:
-                            ref_pCO2, ref_temp = ref
-                        if node is not None:
-                            nod_pCO2, nod_temp = node
+                    if ref is None or node is None:
+                        print("⚠ Modbus read failed\n")
+                        continue
+
+                    ref_pCO2, ref_temp = ref
+                    nod_pCO2, nod_temp = node
 
                     # -----------------------
                     # SOLU-BLU
                     # -----------------------
                     po_line = ""
-                    if ser_PO and ser_PO.is_open:
-                        try:
-                            if ser_PO.in_waiting > 0:
-                                po_line = ser_PO.readline().decode('utf-8', errors='replace').strip()
-                        except Exception as e:
-                            print("Error reading Solu-Blu:", e)
 
-                    # -----------------------
-                    # MAX31865 Temperature Boards
-                    # -----------------------
-                    temp_a = float('nan')
-                    temp_b = float('nan')
+                    if ser_PO.in_waiting > 0:
+                        po_line = ser_PO.readline().decode('utf-8', errors='replace').strip()
+                    
 
-                    # Read Sensor A (GPIO 8)
-                    try:
-                        temp_a = sensor_a.temperature
-                    except Exception as e:
-                        print("Error reading MAX31865 Sensor A (GPIO8):", e)
+                    #
+                    # Temperature data
+                    #
+                    therm_line = ""
+                    if ser_THERM.in_waiting > 0:
+                        therm_line = ser_THERM.readline().strip()
 
-                    # Read Sensor B (GPIO 7)
-                    try:
-                        temp_b = sensor_b.temperature
-                    except Exception as e:
-                        print("Error reading MAX31865 Sensor B (GPIO7):", e)
+                    # put the eos print and log variable creation in a try block
 
                     now = datetime.now()
-                    timestampTHERM = now.strftime("%Y-%m-%d %H:%M:%S")
-
-                    # Format the custom string for both temperatures on one line
-                    therm_line = f"{timestampTHERM},{temp_a:.2f},{temp_b:.2f}"
+                    timestampTherm = now.strftime("%Y-%m-%d %H:%M:%S")
 
                     # -----------------------
                     # PRINT
@@ -312,7 +258,7 @@ def main():
                         f"{timestamp} | "
                         f"REF {ref_pCO2:.1f} ppm | NODE {nod_pCO2:.1f} ppm | \n"
                         f"PO: {po_line}\n"
-                        f"THERM: {therm_line}\n"
+                        f"THERM: {timestamp}, {therm_line}\n"
                     )
 
                     # -----------------------
@@ -323,17 +269,17 @@ def main():
                         f"{timestamp},"
                         f"{elapsed:.2f},"
                         f"{ref_pCO2:.2f},{ref_temp:.2f},"
-                        f"{nod_pCO2:.2f},{nod_temp:.2f}\n"
+                        f"{nod_pCO2:.2f},{nod_temp:.2f}\n"#","
+                        # f"{po_line}\n"
                     )
 
                     POline = f"PO,{po_line}\n"
-                    THERMline = f"THERM,{therm_line}\n"
+
+                    THERMline = f"THERM, {therm_line}\n"
 
                     f.write(line)
                     f.write(POline)
                     f.write(THERMline)
-                    
-                    # Force data to write to disk immediately (vital for systemd)
                     f.flush()
 
                 except Exception as e:
@@ -344,16 +290,10 @@ def main():
                 time.sleep(max(0, POLLING_RATE - dt))
 
     except KeyboardInterrupt:
-        print("Logging stopped manually")
+        print("Logging stopped")
 
     except Exception as e:
-        print("Fatal error in main execution loop:", e)
-        
-    finally:
-        if client:
-            client.close()
-        if ser_PO:
-            ser_PO.close()
+        print("Fatal error:", e)
 
 if __name__ == "__main__":
     main()

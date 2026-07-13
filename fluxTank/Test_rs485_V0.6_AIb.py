@@ -209,6 +209,9 @@ def main():
 
                     # put the eos print and log variable creation in a try block
 
+                    now = datetime.now()
+                    timestampTherm = now.strftime("%Y-%m-%d %H:%M:%S")
+
                     # -----------------------
                     # PRINT
                     # -----------------------
@@ -216,7 +219,7 @@ def main():
                         f"{timestamp} | "
                         f"REF {ref_pCO2:.1f} ppm | NODE {nod_pCO2:.1f} ppm | \n"
                         f"PO: {po_line}\n"
-                        f"THERM: {therm_line}\n"
+                        f"THERM: {timestamp}, {therm_line}\n"
                     )
 
                     # -----------------------
