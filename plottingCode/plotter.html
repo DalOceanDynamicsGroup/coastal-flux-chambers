@@ -2,9 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Raw Data Plotter & Parser</title>
-    <!-- Load Chart.js from a robust, standard CDN provider -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" crossorigin="anonymous"></script>
+    <title>High Performance Data Plotter - 100% Offline Native Plotter</title>
 
     <style>
         body { font-family: sans-serif; margin: 30px; background-color: #f4f4f9; color: #333; }
@@ -15,7 +13,10 @@
         select, input { padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #ccc; background-color: #fff; }
         select:disabled, input:disabled { background-color: #e9ecef; cursor: not-allowed; }
         .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
-        canvas { max-height: 400px; }
+        
+        /* Container for the native plotter canvas */
+        .canvas-container { position: relative; width: 100%; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 4px; padding: 10px 0; }
+        canvas { display: block; width: 100%; height: 350px; }
         
         .table-title { margin-top: 30px; font-size: 18px; font-weight: bold; color: #2c3e50; }
         .table-container { 
@@ -38,11 +39,31 @@
             border-bottom: 2px solid #dee2e6; 
         }
         tr:hover { background-color: #f1f3f5; }
+
+        .pagination-bar { 
+            display: flex; 
+            align-items: center; 
+            justify-content: flex-end; 
+            gap: 15px; 
+            margin-top: 15px; 
+            font-size: 14px; 
+        }
+        .pagination-btn { 
+            background-color: #3498db; 
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+        .pagination-btn:hover { background-color: #2980b9; }
+        .pagination-btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <h1>Raw Data Plotter & Parser</h1>
+    <h1>High Performance Data Plotter</h1>
     
     <div class="container">
         <div class="controls">
@@ -72,7 +93,11 @@
                 </select>
             </div>
         </div>
-        <canvas id="myChart"></canvas>
+        
+        <!-- Native plotting canvas block -->
+        <div class="canvas-container">
+            <canvas id="customPlotCanvas" width="1000" height="350"></canvas>
+        </div>
     </div>
 
     <div id="tableSection" style="display: none;">
@@ -83,10 +108,19 @@
                 <tbody id="tableBody"></tbody>
             </table>
         </div>
+        
+        <div class="pagination-bar">
+            <button class="pagination-btn" id="prevBtn">Previous</button>
+            <span id="pageIndicator">Page 1 of 1</span>
+            <button class="pagination-btn" id="nextBtn">Next</button>
+        </div>
     </div>
     <script>
         let masterData = { PO: [], EOS: [], THERM: [] };
-        let chartInstance = null;
+        
+        let currentPage = 1;
+        const rowsPerPage = 50; 
+        let currentColumns = [];
 
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const files = e.target.files; 
@@ -94,44 +128,53 @@
 
             const reader = new FileReader();
             reader.onload = function(event) {
-                parseFileContents(event.target.result);
+                parseFileContentsFast(event.target.result);
             };
-            reader.readAsText(files[0]); // Targets the actual file item correctly now
+            reader.readAsText(files[0]); // FIXED: Targets the first item explicitly using indexed reference
         });
 
-        function parseFileContents(text) {
+        function parseFileContentsFast(text) {
             masterData = { PO: [], EOS: [], THERM: [] };
             const lines = text.split(/\r?\n/);
+            const len = lines.length;
+            const numberPattern = /\d+\.\d+/g;
 
-            lines.forEach(line => {
-                const trimmed = line.trim();
-                if (!trimmed) return;
+            for (let i = 0; i < len; i++) {
+                const line = lines[i];
+                if (!line) continue;
 
-                if (trimmed.startsWith('PO,')) {
-                    const parts = trimmed.split(',').map(p => p.trim());
-                    if (parts.length > 2) { masterData.PO.push(parts); }
-                } 
-                else if (trimmed.startsWith('EOS,')) {
-                    const parts = trimmed.split(',').map(p => p.trim());
-                    if (parts.length > 1) { masterData.EOS.push(parts); }
-                } 
-                else if (trimmed.startsWith('THERM,')) {
-                    const numberPattern = /\d+\.\d+/g;
-                    const matches = trimmed.match(numberPattern);
+                if (line.charCodeAt(0) === 84 && line.startsWith('THERM,')) {
+                    const matches = line.match(numberPattern);
                     if (matches && matches.length > 0) {
-                        const cleanedRow = ['THERM'].concat(matches);
-                        masterData.THERM.push(cleanedRow);
+                        masterData.THERM.push(['THERM'].concat(matches));
+                    }
+                } else if (line.charCodeAt(0) === 69 && line.startsWith('EOS,')) {
+                    const parts = line.split(',');
+                    if (parts.length > 1) {
+                        masterData.EOS.push(parts.map(p => p.trim()));
+                    }
+                } else if (line.charCodeAt(0) === 80 && line.startsWith('PO,')) {
+                    const parts = line.split(',');
+                    if (parts.length > 2) {
+                        masterData.PO.push(parts.map(p => p.trim()));
                     }
                 }
-            });
+            }
 
             document.getElementById('prefixSelect').disabled = false;
             resetFiltersAndGraph();
         }
 
         document.getElementById('prefixSelect').addEventListener('change', updateDropdownsAndTable);
-        document.getElementById('xAxisSelect').addEventListener('change', drawGraph);
-        document.getElementById('yAxisSelect').addEventListener('change', drawGraph);
+        document.getElementById('xAxisSelect').addEventListener('change', drawNativeGraph);
+        document.getElementById('yAxisSelect').addEventListener('change', drawNativeGraph);
+        
+        document.getElementById('prevBtn').addEventListener('click', () => { if (currentPage > 1) { currentPage--; renderPage(); } });
+        document.getElementById('nextBtn').addEventListener('click', () => { 
+            const prefix = document.getElementById('prefixSelect').value;
+            const maxPage = Math.ceil(masterData[prefix].length / rowsPerPage);
+            if (currentPage < maxPage) { currentPage++; renderPage(); } 
+        });
 
         function resetFiltersAndGraph() {
             document.getElementById('prefixSelect').value = "";
@@ -140,7 +183,13 @@
             document.getElementById('xAxisSelect').disabled = true;
             document.getElementById('yAxisSelect').disabled = true;
             document.getElementById('tableSection').style.display = 'none';
-            if (chartInstance) chartInstance.destroy();
+            clearCanvas();
+        }
+
+        function clearCanvas() {
+            const canvas = document.getElementById('customPlotCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
         function updateDropdownsAndTable() {
@@ -155,118 +204,136 @@
             yAxisSelect.disabled = true;
             tableSection.style.display = 'none';
 
-            if (chartInstance) chartInstance.destroy();
+            clearCanvas();
             if (!prefix || masterData[prefix].length === 0) return;
 
             let maxCols = 0;
-            masterData[prefix].forEach(row => {
-                if (row.length > maxCols) maxCols = row.length;
-            });
+            const dataRows = masterData[prefix];
+            const dataRowsLen = dataRows.length;
+            
+            for (let i = 0; i < dataRowsLen; i++) {
+                if (dataRows[i].length > maxCols) maxCols = dataRows[i].length;
+            }
 
             const optIndexX = document.createElement('option');
             optIndexX.value = "ROW_INDEX";
             optIndexX.textContent = "Row Index (1, 2, 3...)";
             xAxisSelect.appendChild(optIndexX);
 
-            const colNames = [];
+            currentColumns = [];
             for (let i = 0; i < maxCols; i++) {
-                if (i === 0) colNames.push('Col 0 (Prefix)');
+                if (i === 0) currentColumns.push('Col 0 (Prefix)');
                 else if (prefix === 'THERM') {
-                    if (i === 1) colNames.push('Col 1 (Air Temp)');
-                    else if (i === 2) colNames.push('Col 2 (Water Temp)');
-                    else colNames.push(`Col ${i}`);
+                    if (i === 1) currentColumns.push('Col 1 (Air Temp)');
+                    else if (i === 2) currentColumns.push('Col 2 (Water Temp)');
+                    else currentColumns.push(`Col ${i}`);
                 } 
                 else if (prefix === 'EOS') {
-                    if (i === 1) colNames.push('Col 1 (Timestamp)');
-                    else colNames.push(`Col ${i}`);
+                    if (i === 1) currentColumns.push('Col 1 (Timestamp)');
+                    else currentColumns.push(`Col ${i}`);
                 } 
-                else { colNames.push(`Col ${i}`); }
+                else { currentColumns.push(`Col ${i}`); }
             }
 
-            colNames.forEach((name, index) => {
+            const fragX = document.createDocumentFragment();
+            const fragY = document.createDocumentFragment();
+
+            currentColumns.forEach((name, index) => {
                 const optX = document.createElement('option');
                 optX.value = index; optX.textContent = name;
-                xAxisSelect.appendChild(optX);
+                fragX.appendChild(optX);
 
                 const optY = document.createElement('option');
                 optY.value = index; optY.textContent = name;
-                yAxisSelect.appendChild(optY);
+                fragY.appendChild(optY);
             });
+
+            xAxisSelect.appendChild(fragX);
+            yAxisSelect.appendChild(fragY);
 
             xAxisSelect.disabled = false;
             yAxisSelect.disabled = false;
-            renderTableGrid(prefix, colNames);
+            
+            currentPage = 1;
+            renderPage();
+            tableSection.style.display = 'block';
         }
 
-        function renderTableGrid(prefix, colNames) {
+        function renderPage() {
+            const prefix = document.getElementById('prefixSelect').value;
             const tHead = document.getElementById('tableHead');
             const tBody = document.getElementById('tableBody');
-            document.getElementById('tableHeaderTitle').textContent = `Filtered Data Table: "${prefix}" (${masterData[prefix].length} clean rows parsed)`;
+            const dataRows = masterData[prefix];
+            const totalRows = dataRows.length;
+            const maxPage = Math.ceil(totalRows / rowsPerPage) || 1;
 
-            tHead.innerHTML = `<tr><th>Index</th>${colNames.map(name => `<th>${name}</th>`).join('')}</tr>`;
+            document.getElementById('tableHeaderTitle').textContent = `Filtered Data Table: "${prefix}" (${totalRows} clean rows parsed)`;
 
-            let rowsHtml = '';
-            masterData[prefix].forEach((row, idx) => {
-                rowsHtml += '<tr>';
-                rowsHtml += `<td><strong>${idx + 1}</strong></td>`;
-                for (let i = 0; i < colNames.length; i++) {
-                    rowsHtml += `<td>${row[i] !== undefined ? row[i] : ''}</td>`;
+            tHead.innerHTML = `<tr><th>Index</th>${currentColumns.map(name => `<th>${name}</th>`).join('')}</tr>`;
+
+            const startIdx = (currentPage - 1) * rowsPerPage;
+            const endIdx = Math.min(startIdx + rowsPerPage, totalRows);
+            const colLen = currentColumns.length;
+
+            let htmlBuffer = [];
+            for (let i = startIdx; i < endIdx; i++) {
+                const row = dataRows[i];
+                htmlBuffer.push('<tr><td><strong>', (i + 1), '</strong></td>');
+                for (let j = 0; j < colLen; j++) {
+                    htmlBuffer.push('<td>', (row[j] !== undefined ? row[j] : ''), '</td>');
                 }
-                rowsHtml += '</tr>';
-            });
-            tBody.innerHTML = rowsHtml;
-            document.getElementById('tableSection').style.display = 'block';
+                htmlBuffer.push('</tr>');
+            }
+            tBody.innerHTML = htmlBuffer.join('');
+
+            document.getElementById('pageIndicator').textContent = `Page ${currentPage} of ${maxPage} (Rows ${startIdx + 1}-${endIdx})`;
+            document.getElementById('prevBtn').disabled = (currentPage === 1);
+            document.getElementById('nextBtn').disabled = (currentPage === maxPage);
         }
 
-        function drawGraph() {
+        // Pure HTML5 Canvas rendering engine: Faster, lightweight, and 100% immune to network/CORS blocks
+        function drawNativeGraph() {
             const prefix = document.getElementById('prefixSelect').value;
             const xValue = document.getElementById('xAxisSelect').value;
             const yValue = document.getElementById('yAxisSelect').value;
-            const ctx = document.getElementById('myChart').getContext('2d');
+            const canvas = document.getElementById('customPlotCanvas');
+            const ctx = canvas.getContext('2d');
 
-            if (chartInstance) chartInstance.destroy();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (!prefix || !xValue || !yValue) return;
 
-            if (typeof Chart === 'undefined') {
-                alert("Chart engine is currently blocked by your network connection. However, your data table below is fully interactive!");
-                return;
-            }
-
             const yIndex = parseInt(yValue);
-            let xLabels = [];
+            const dataRows = masterData[prefix];
+            const totalPoints = dataRows.length;
+            if (totalPoints === 0) return;
 
-            if (xValue === "ROW_INDEX") {
-                xLabels = masterData[prefix].map((_, idx) => `Point ${idx + 1}`);
-            } else {
-                const xIndex = parseInt(xValue);
-                xLabels = masterData[prefix].map(row => row[xIndex] !== undefined ? row[xIndex] : "");
-            }
-
-            const yValues = masterData[prefix].map(row => {
-                const val = row[yIndex];
-                return (val && !isNaN(val)) ? Number(val) : (val || "");
+            // Extract numeric values and filter out text errors safely
+            const numericalValues = dataRows.map(row => {
+                const val = parseFloat(row[yIndex]);
+                return isNaN(val) ? 0 : val;
             });
 
-            chartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: xLabels,
-                    datasets: [{
-                        label: `${prefix} Data Trend`,
-                        data: yValues,
-                        borderColor: '#3498db',
-                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                        borderWidth: 2,
-                        tension: 0.1,
-                        fill: true
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: { y: { beginAtZero: false } }
-                }
-            });
-        }
-    </script>
-</body>
-</html>
+            // Calculate dataset range scales dynamically
+            let minY = Math.min(...numericalValues);
+            let maxY = Math.max(...numericalValues);
+            
+            // Give a tiny padding margin buffer if values are identical
+            if (minY === maxY) { minY -= 1; maxY += 1; }
+            const yRange = maxY - minY;
+
+            // Setup chart margins
+            const paddingLeft = 60;
+            const paddingRight = 30;
+            const paddingTop = 30;
+            const paddingBottom = 40;
+            const graphWidth = canvas.width - paddingLeft - paddingRight;
+            const graphHeight = canvas.height - paddingTop - paddingBottom;
+
+            // Draw Background Grid Guide Lines
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.font = '11px sans-serif';
+            ctx.fillStyle = '#718096';
+
+            const gridLines = 5;
+for (let i = 0; i <= gridLines; i++) {const yPos = paddingTop + (graphHeight * (i / gridLines));const currentGridVal = (maxY - (yRange * (i / gridLines))).toFixed(2);ctx.beginPath();ctx.moveTo(paddingLeft, yPos);ctx.lineTo(canvas.width - paddingRight, yPos);ctx.stroke();// Print numerical scale indicator textctx.fillText(currentGridVal, 10, yPos + 4);}// Map data coordinates onto the screen grid matrix spacectx.beginPath();ctx.strokeStyle = '#3498db';ctx.lineWidth = 2.5;ctx.lineJoin = 'round';for (let i = 0; i < totalPoints; i++) {const xPos = paddingLeft + (graphWidth * (i / (totalPoints - 1 || 1)));const yPos = paddingTop + (graphHeight * (1 - ((numericalValues[i] - minY) / yRange)));if (i === 0) {ctx.moveTo(xPos, yPos);} else {ctx.lineTo(xPos, yPos);}}ctx.stroke();// Label baseline text flags (Displays Start and End boundaries)ctx.fillStyle = '#4a5568';ctx.font = '12px sans-serif';ctx.fillText("Start", paddingLeft, canvas.height - 15);let labelEndText = xValue === "ROW_INDEX" ? Point ${totalPoints} : "End";ctx.fillText(labelEndText, canvas.width - paddingRight - 50, canvas.height - 15);}
