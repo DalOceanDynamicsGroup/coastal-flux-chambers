@@ -1,13 +1,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % data_processing_pipeline.m
-% This script runs all the functions/scripts to read in raw sensor data and
-% output merged datasets for further analysis.
+% This script runs all the functions/scripts to process raw sensor data 
+% from the fluxpi tank setup and outputs and plots merged datasets for 
+% further analysis.
 %
 % AUTHOR: Emily Chua
 %
 % DATE:
 % First created: 3/26/26
-% Last updated:
+% Last updated: 7/10/26
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear; close all; clc
 
@@ -15,35 +16,48 @@ clear; close all; clc
 % Add in main paths
 %==========================================================================
 addpath(genpath('C:\Users\chuaem\Documents\MATLAB'))
-addpath('G:\My Drive\Dal and MIT\MATLAB')
+addpath(genpath('G:\My Drive\Dal and MIT\coastal-flux-chambers'))
 
 %==========================================================================
 % Interactively select the experiment folder
 %==========================================================================
-start_path = 'G:\My Drive\Dal and MIT\Lab Experiments\Data\';
+dataRoot = 'G:\My Drive\Dal and MIT\Lab Experiments\Data\';
 dialog_title = 'Select an experiment data folder';
-selpath = uigetdir(start_path,dialog_title);
-if selpath == 0
+selPath = uigetdir(dataRoot,dialog_title);
+if selPath == 0
     error('No folder selected.');
 end
 
-[~,expName] = fileparts(selpath);
+[~,expName] = fileparts(selPath);
 
 %==========================================================================
-% Process raw data
+% Process and plot raw data
 %==========================================================================
-% Internally logged Eosense data
-eosDat = processEosense(selpath);
-close
+% Eosense data
+eosDat = processEOSModbus(selPath,true);
 
 % Pro-Oceanus data
-proDat = processProOceanus(selpath);
-close
+poDat = processPO(selPath);
 
-mergedDat = mergeSensorData(selpath);
-close
+% % Thermistor data
+% processTHERM(selpath);
 
-%==========================================================================
-% Plot raw data
-%==========================================================================
-run('plot_all_sensor_data.m')
+% Process datasets
+[eosDat,poPaired] = prepSensorData_fluxpi(selPath,eosDat,poDat);
+
+% Prompt user for pulse start unless this is an offset test
+if contains(lower(expName),'offset')
+    pulseStart = [];
+else
+    expDate = extractBefore(expName,'_');
+    answer = inputdlg('Enter pulse start time (HH:mm:ss):', 'Pulse Time', 1);
+    pulseStart = datetime(expDate + " " + answer{1}, 'InputFormat', 'yyyy-MM-dd HH:mm:ss', 'TimeZone', 'America/Halifax');
+end
+
+% Plot datasets
+plotFluxpiData(selPath,pulseStart);
+
+% %==========================================================================
+% % Compute fluxes and kw
+% %==========================================================================
+% run('flux_and_budget_analysis')
