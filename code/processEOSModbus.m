@@ -14,7 +14,7 @@ function eosDat = processEOSModbus(selPath,applyOffsets)
 %   applyOffsets    Apply EOS offset corrections if available (optional;
 %   default = true)
 
-dataRoot = 'G:\My Drive\Dal and MIT\Lab Experiments\Data\';
+dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
 
 % Handle inputs
 if nargin < 1 || isempty(selPath)
@@ -88,11 +88,13 @@ eosDat = eosDat(uniqueIdx, :);
 
 % Apply offset corrections
 if applyOffsets
-    offsetFile = fullfile(dataRoot, 'Calibration', 'eosOffsets.mat');
+    offsetFile = fullfile(dataRoot, 'Offsets', 'eosOffsets_2026-07-16.mat');
     if exist(offsetFile,'file')
         load(offsetFile,'eosOffsets')
         eosDat.ref_conc_corr = eosDat.ref_conc - eosOffsets.ref_avg;
         eosDat.sample_conc_corr = eosDat.sample_conc - eosOffsets.sample_avg;
+        fprintf(['Reference offset: ', num2str(eosOffsets.ref_avg,2), ' \xB1 ', num2str(eosOffsets.ref_std,1), ' ppm\n'])
+        fprintf(['Sample offset: ', num2str(eosOffsets.sample_avg,2), ' \xB1 ', num2str(eosOffsets.sample_std,1), ' ppm\n'])
     else
         warning('Offset file not found. No correction applied.')
     end
@@ -109,9 +111,10 @@ xlabel('Local Time')
 ylabel('CO_2 Concentration (ppm)')
 legend('show')
 grid on
+title(expName,'Interpreter','none')
 
 % Option to save data
-option = questdlg('Save data?','Save File','Yes','No','Yes');
+option = questdlg('Save EOS data?','Save File','Yes','No','Yes');
 switch option
     case 'Yes'
         save(fullfile(procPath, ['eos_',expName,'.mat']), 'eosDat')

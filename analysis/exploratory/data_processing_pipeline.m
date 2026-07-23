@@ -15,13 +15,13 @@ clear; close all; clc
 %==========================================================================
 % Add in main paths
 %==========================================================================
-addpath(genpath('C:\Users\chuaem\Documents\MATLAB'))
-addpath(genpath('G:\My Drive\Dal and MIT\coastal-flux-chambers'))
+addpath(genpath('C:\Users\Emily\OneDrive - Dalhousie University\Documents\MATLAB'))
+addpath(genpath('C:\Users\Emily\Documents\GitHub\coastal-flux-chambers'))
 
 %==========================================================================
 % Interactively select the experiment folder
 %==========================================================================
-dataRoot = 'G:\My Drive\Dal and MIT\Lab Experiments\Data\';
+dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
 dialog_title = 'Select an experiment data folder';
 selPath = uigetdir(dataRoot,dialog_title);
 if selPath == 0
@@ -30,34 +30,41 @@ end
 
 [~,expName] = fileparts(selPath);
 
+% Prevent offset experiments from using the normal pipeline
+if contains(lower(expName),'offset')
+    error(['Offset test experiments should be processed with ',...
+        'determine_offsets.m, not data_processing_pipeline.m.'])
+end
+
 %==========================================================================
-% Process and plot raw data
+% Process raw data
 %==========================================================================
 % Eosense data
+% Apply previously determined EOS offsets (generated using determine_offsets.m)
 eosDat = processEOSModbus(selPath,true);
 
 % Pro-Oceanus data
 poDat = processPO(selPath);
 
-% % Thermistor data
-% processTHERM(selpath);
+% Thermistor data
+thermDat = processTHERM(selPath);
 
-% Process datasets
-[eosDat,poPaired] = prepSensorData_fluxpi(selPath,eosDat,poDat);
+%==========================================================================
+% Prepare datasets for analysis
+%==========================================================================
+% Prompt user for pulse start
+expDate = extractBefore(expName,'_');
+answer = inputdlg('Enter pulse start time (HH:mm:ss):', 'Pulse Time', 1);
+pulseStart = datetime(expDate + " " + answer{1}, 'InputFormat', 'yyyy-MM-dd HH:mm:ss', 'TimeZone', 'America/Halifax');
 
-% Prompt user for pulse start unless this is an offset test
-if contains(lower(expName),'offset')
-    pulseStart = [];
-else
-    expDate = extractBefore(expName,'_');
-    answer = inputdlg('Enter pulse start time (HH:mm:ss):', 'Pulse Time', 1);
-    pulseStart = datetime(expDate + " " + answer{1}, 'InputFormat', 'yyyy-MM-dd HH:mm:ss', 'TimeZone', 'America/Halifax');
-end
+[eosDat, poPaired, thermDat, pulseStart] = prepFluxpiData(selPath, eosDat, poDat, thermDat, pulseStart);
 
+%==========================================================================
 % Plot datasets
+%==========================================================================
 plotFluxpiData(selPath,pulseStart);
 
 % %==========================================================================
 % % Compute fluxes and kw
 % %==========================================================================
-% run('flux_and_budget_analysis')
+% run('flux_and_budget_analysis_fluxpi')

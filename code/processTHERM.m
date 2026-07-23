@@ -1,6 +1,6 @@
-function processTHERM(selPath)
-% Reads raw thermistor data and outputs a timetable containing 
-% the desired parameters. User interactively chooses selPath. 
+function thermDat = processTHERM(selPath)
+% Reads raw thermistor data and outputs a timetable containing
+% the desired parameters. User interactively chooses selPath.
 %
 % NOTE: Thermistor data do not contain timestamps. Timestamps are inherited
 % from the processed EOS dataset because EOS and THERM records are written
@@ -8,11 +8,12 @@ function processTHERM(selPath)
 %
 % Optionally saves a .mat file
 
+dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
+
 % Handle inputs
 if nargin < 1 || isempty(selPath)
-    start_path = 'G:\My Drive\Dal and MIT\Lab Experiments\Data\';
     dialog_title = 'Select an experiment data folder';
-    selPath = uigetdir(start_path,dialog_title);
+    selPath = uigetdir(dataRoot,dialog_title);
     if selPath == 0
         error('No folder selected.')
     end
@@ -22,7 +23,7 @@ end
 rawPath = fullfile(selPath, 'raw');
 procPath = fullfile(selPath, 'processed');
 
-% Load EOS timestamps
+% Need to get timestamps from EOS
 eosFile = dir(fullfile(procPath,'eos_*.mat'));
 
 if isempty(eosFile)
@@ -48,12 +49,11 @@ fprintf('Found %d raw file(s).\n', numel(datFiles));
 % Initialize container
 thermDat = timetable();
 
-%% HERE
 % Loop through files
 filePath = fullfile(datFiles(1).folder,datFiles(1).name);
 lines = readlines(filePath);
 
-% Check if there is a final empty line and remove if so 
+% Check if there is a final empty line and remove if so
 if strlength(strtrim(lines(end))) == 0
     lines(end) = [];
 end
@@ -69,7 +69,7 @@ airT = nan(n,1);
 waterT = nan(n,1);
 
 for i = 1:n
-    
+
     token = regexp(lines(i), 'TemperatureAir\s*=\s*([-\d\.]+),\s*TemperatureH2O\s*=\s*([-\d\.]+)', 'tokens');
 
     if ~isempty(token)
@@ -80,10 +80,25 @@ for i = 1:n
 end
 
 thermDat = timetable(eosDat.datetime_local, airT, waterT, 'VariableNames', {'air_T','water_T'});
-%%
+
 % Sort combined timetable (important if restart occurred)
-[~, uniqueIdx] = unique(thermDat.datetime_local);
+[~, uniqueIdx] = unique(thermDat.Time);
 thermDat = thermDat(uniqueIdx, :);
+
+% Replace invalid PT100 values with NaN
+thermDat.air_T(thermDat.air_T < 0 | thermDat.air_T > 50) = NaN;
+thermDat.water_T(thermDat.water_T < 0 | thermDat.water_T > 50) = NaN;
+
+% First row where both thermistors are valid
+idx = ~isnan(thermDat.air_T) & ~isnan(thermDat.water_T);
+% Remove first continuous block of invalid data
+firstValid = find(idx, 1, 'first');
+thermDat = thermDat(firstValid:end, :);
+startupDuration = thermDat.Time(firstValid) - thermDat.Time(1)
+
+% After trimming, fill isolated NaNs
+thermDat.air_T = fillmissing(thermDat.air_T, 'linear');
+thermDat.water_T = fillmissing(thermDat.water_T, 'linear');
 
 figure,clf
 plot(thermDat.Time, thermDat.air_T, '.', 'DisplayName', 'Air Temperature')
@@ -91,14 +106,15 @@ hold on
 plot(thermDat.Time, thermDat.water_T, '.', 'DisplayName', 'Water Temperature')
 xlabel('Local Time')
 ylabel('Temperature (^oC)')
-legend('show')
+legend('show','location','best')
 grid on
+title(expName,'Interpreter','none')
 
 % Option to save data
-option = questdlg('Save data?','Save File','Yes','No','Yes');
+option = questdlg('Save THERM data?','Save File','Yes','No','Yes');
 switch option
     case 'Yes'
-        save(fullfile(procPath, ['eos_',expName,'.mat']), 'thermDat')
+        save(fullfile(procPath, ['therm_',expName,'.mat']), 'thermDat')
         disp('File saved!')
     case 'No'
         disp('File not saved')

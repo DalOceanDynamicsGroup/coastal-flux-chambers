@@ -246,14 +246,14 @@ Combine the two time derivatives (Eq. \ref{eq:7} and \ref{eq:8}). This removes t
 	V_m \left(\frac{\partial C_s}{\partial t} - \frac{\partial C_r}{\partial t}\right) = S_c f_c - S_a k_a (C_s - C_r) 
 \end{equation}
 
-Finally, solve for $f_c$:
+Finally, solve for $f_c$, noting that $S_a = S_c$:
 \begin{equation} \label{eq:10}
-	\boxed{f_c = \frac{V_m}{S_c} \left( \frac{\partial C_s}{\partial t} - \frac{\partial C_r}{\partial t} \right) + \frac{S_a}{S_c} k_a (C_s - C_r)}
+	\boxed{f_c = \frac{V_m}{S_c} \left( \frac{\partial C_s}{\partial t} - \frac{\partial C_r}{\partial t} \right) + k_a (C_s - C_r)}
 \end{equation}
 
 This equation depends only on:
 \begin{itemize}
-	\item  geometry ($S_a$, $S_c$, $V_m$),
+	\item geometry ($S_c$, $V_m$),
 	\item the eosFD-measured concentrations ($C_s$, $C_r$),
 	\item their time derivatives ($\frac{\partial C_s}{\partial t}$, $\frac{\partial C_r}{\partial t}$), and
 	\item the side-membrane gas transfer velocity ($k_a$), obtained via calibration (or using the averaged Eosense value; see Table \ref{tab:eosense-values}).
@@ -332,12 +332,12 @@ This assumption yields a simplified expression for the CO$_2$ concentration in t
 \begin{equation}
 	\left\{
 	\begin{aligned}
-		(\ref{eq:10}): f_c &= \frac{S_a}{S_c}\,k_a\,(C_s - C_a) \\
+		(\ref{eq:10}): f_c &= k_a\,(C_s - C_a) \\
 		(\ref{eq:13}): f_c &= k_c\,(C_c - C_s)                 \\
 	\end{aligned}
 	\right.
 	\;\Longrightarrow\;
-	C_c = C_s + \frac{S_a k_a}{S_c k_c}\,(C_s - C_r) \quad 
+	C_c = C_s + \frac{k_a}{k_c}\,(C_s - C_r) \quad 
 	\label{eq:20}
 \end{equation}
 which can then be used to calculate the gas transfer velocity beneath the collar:
@@ -358,9 +358,9 @@ which can then be used to calculate the gas transfer velocity beneath the collar
 
 We can now derive a simple expression for the steady-state true air--water CO$_2$ flux, $f_w^\dagger$.
 
-First, substitute Eq. \ref{eq:20} into Eq. \ref{eq:21}. Given that $S_a = S_c = S_w$, this results in:
-\begin{equation}\label{eq:22}
-	\boxed{k_w = \frac{k_a}{\dfrac{C_w - C_s}{C_s - C_r} - \dfrac{k_a}{k_c}}}
+To obtain an expression for the gas-transfer velocity, substitute Eq. \ref{eq:20} into Eq. \ref{eq:21}:
+\begin{equation}\label{eq:22} 
+	\boxed{k_w = \frac{\dfrac{S_c}{S_w}\,k_a} {\dfrac{C_w-C_s}{C_s-C_r}-\dfrac{k_a}{k_c}}}
 \end{equation}
 
 Assuming that $k_w^\dagger = k_w$, the bulk equation for the true air--water flux is:
@@ -369,7 +369,7 @@ Assuming that $k_w^\dagger = k_w$, the bulk equation for the true air--water flu
 \end{equation}	
 Substituting in Eq. \ref{eq:22}, we arrive at the steady-state true flux equation,
 \begin{equation}\label{eq:24}
-	\boxed{f_w^\dagger = \frac{k_a(C_w - C_r)}{\dfrac{C_w - C_s}{C_s - C_r} - \dfrac{k_a}{k_c}}}
+	\boxed{f_w^\dagger = \frac{\dfrac{S_c}{S_w}k_a(C_w - C_r)}{\dfrac{C_w - C_s}{C_s - C_r} - \dfrac{k_a}{k_c}}}
 \end{equation}
 
 Notes:
@@ -421,7 +421,7 @@ Eosense assumes steady-state conditions: $\dfrac{\partial C_s}{\partial t} = \df
 
 The Sample mass balance becomes
 \begin{equation*}
-	S_c f_c = S_a f_a
+	f_c = f_a
 \end{equation*}
 and similarly for the Reference mass balance:
 \begin{gather*}
@@ -429,9 +429,9 @@ and similarly for the Reference mass balance:
 	\implies C_r = C_a
 \end{gather*}
 
-Here, Eosense assumes that $f_c = f_s$, and prescribes this flux during their calibration. Given these assumptions, and since $S_a = S_c$, the Sample mass balance becomes:
+Here, Eosense assumes that $f_c = f_s$, and prescribes this flux during their calibration. Given these assumptions, the Sample mass balance becomes:
 \begin{equation*}
-	f_s = f_a = k_a(C_s - C_r)
+	f_s = f_c = f_a = k_a(C_s - C_a)
 \end{equation*}
 But in steady state, $C_a = C_r$; therefore,
 \begin{equation*}

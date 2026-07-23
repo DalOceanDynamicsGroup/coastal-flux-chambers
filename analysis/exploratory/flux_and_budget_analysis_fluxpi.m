@@ -14,7 +14,7 @@
 % First created: 4/2026
 % Major restructures: 5/6/2026, 7/15/26
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-clear; close all; clc
+% clear; close all; clc
 
 % -------------------------------------------------------------------------
 % Setup
@@ -49,48 +49,113 @@ lblsize = 18;
 lgdsize = 16;
 
 % ---Load analysis-ready data file-----------------------------------------
-rootPath = 'G:\My Drive\Dal and MIT\Lab Experiments\Data\';
+dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
 dialog_title = 'Select an experiment data folder';
-selPath = uigetdir(rootPath,dialog_title);
-[~,expt_name] = fileparts(selPath);
+selPath = uigetdir(dataRoot,dialog_title);
+[~,expName] = fileparts(selPath);
 filePath = fullfile(selPath, 'processed');
 
 datFile = dir(fullfile(filePath, 'allDat*'));
 S = load(fullfile(datFile(1).folder, datFile(1).name));
 eosDat = S.eosDat;
 poPaired = S.poPaired;
+thermDat = S.thermDat;
 if isempty(datFile)
     error('No data file found.')
 end
 
-eos_h = hours(eosDat.datetime_local - eosDat.datetime_local(1));
-po_h = hours(poPaired.datetime_local - poPaired.datetime_local(1));
-
-%%
-% -------------------------------------------------------------------------
-% Steady-State Analysis
-% -------------------------------------------------------------------------
-% Pair EOS to PO values
+% ---Pair EOS and THERM to PO values---------------------------------------
 eosPaired = retime(eosDat, poPaired.datetime_local, 'mean');
+thermPaired = retime(thermDat, poPaired.datetime_local, 'mean');
 
-% Use the paired EOS and PO values in calculations
+% Use the paired EOS, THERM, and PO values in calculations
 Cr_pair = eosPaired.ref_conc_corr;
 Cs_pair = eosPaired.sample_conc_corr;
 Ca_pair = poPaired.air_conc;
 Cw_pair = poPaired.water_conc;
+Tair = thermPaired.air_T + 273.15; % (K)
 
-% HERE - don't assume Sw = Sc!!
+eos_h = hours(eosDat.datetime_local - eosDat.datetime_local(1));
+po_h = hours(poPaired.datetime_local - poPaired.datetime_local(1));
 
-% ---Calculate dynamic kw(t) using Eq. 22----------------------------------
+%% Test splines/smoothing
+% Spline
+pp_Cw = csaps(po_h,Cw_pair,0.99);
+pp_Ca = csaps(po_h,Ca_pair,0.99);
 
-kw_dynamic = ka ./ ((Cw_pair - Cs_pair) ./ (Cs_pair - Cr_pair) - ka/kc); % (m s-1)
+Cw_spline = fnval(pp_Cw,po_h);
+Ca_spline = fnval(pp_Ca,po_h);
 
-% -------------------------------------------------------------------------
-% Calculate true kw (m s-1) from pseudo-SS means
-% -------------------------------------------------------------------------
-% ---1. Visually identify pseudo-steady state window-----------------------
+dCwdt_spline = fnval(fnder(pp_Cw),po_h);
+
 figure,clf
+plot(po_h,Cw_pair,'.','Color',POwater_clr,'DisplayName','C_w')
+hold on
+plot(po_h,Ca_pair,'.','Color',POair_clr,'DisplayName','C_a')
+plot(po_h,Cw_spline,'-','Color',POwater_clr,'DisplayName','C_w (spline)')
+plot(po_h,Ca_spline,'-','Color',POair_clr,'DisplayName','C_a (spline)')
+legend('show')
+ylabel('dC_w/dt')
+xlabel('Elapsed Hours')
+
+% ---1. Dynamic Conditions-------------------------------------------------
+% Calculate Pro-Oceanus flux and kw(t)
+fwPO_ppm = -H * dCwdt_spline;                      % (ppm m s-1)
+  
+% Calculate Eosense kw(t) using Eq. 22
+kw_dynamic = Sm / Sw * ka ./ ((Cw_spline - Cs_pair) ./ (Cs_pair - Cr_pair) - ka/kc); % (m s-1)
+
+% Visually identify pseudo-steady state window
+figure,clf
+title(expName,'Interpreter','none')
 elapsed_h = eosPaired.elapsed_s / 3600;
+
+yyaxis left
+plot(elapsed_h, Cr_pair, '.-','color', ref_clr, 'DisplayName', 'C_{r}')
+hold on
+plot(elapsed_h, Cs_pair, '.-', 'color', sample_clr, 'DisplayName', 'C_{s}')
+plot(elapsed_h, Ca_spline, '-o', 'MarkerSize', 2,'color', POair_clr, 'DisplayName', 'C_{a} (spline)')
+plot(elapsed_h, Cw_spline, '-^', 'MarkerSize', 2,'color', POwater_clr, 'DisplayName', 'C_{w} (spline)')
+ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
+lgd = legend('show','location','northeast');
+lgd.NumColumns = 4;
+lgd.FontSize = lgdsize;
+
+yyaxis right
+plot(elapsed_h, kw_dynamic, '.:', 'Color', sample_clr, 'DisplayName', 'k_{w} (Eq. 22)')
+hold on
+plot(elapsed_h, kwPO_dynamic, '.:', 'Color', POwater_clr, 'DisplayName', 'k_{w,PO} (from \partialC_w/\partialt)')
+yline(0,'LineWidth',2,'Color','k','HandleVisibility','off')
+xlim([0 20])
+ylim([-5E-4 5E-4])
+xlabel('Hours Elapsed','FontSize',lblsize)
+ylabel('k_w (m s^{-1})','FontSize',lblsize)
+ax = gca;
+ax.YColor = 'k';
+grid on; box on
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+
+
+%%
+% -------------------------------------------------------------------------
+% kw Calculations
+% -------------------------------------------------------------------------
+% ---1. Dynamic Conditions-------------------------------------------------
+% Calculate Pro-Oceanus flux and kw(t)
+dt = seconds(poPaired.datetime_local(2) - poPaired.datetime_local(1)); % TT_5min has uniform spacing by definition
+dCwdt_sg = gradient(Cw_pair, dt);  % (ppm s-1); gradient function computes central differences for interior points
+fwPO_ppm = -H * dCwdt_sg;          % (ppm m s-1)
+kwPO_dynamic = fwPO_ppm ./ (Cw_pair - Ca_pair); % (m s-1)
+
+% Calculate Eosense kw(t) using Eq. 22
+kw_dynamic = Sm / Sw * ka ./ ((Cw_pair - Cs_pair) ./ (Cs_pair - Cr_pair) - ka/kc); % (m s-1)
+
+% Visually identify pseudo-steady state window
+figure,clf
+title(expName,'Interpreter','none')
+elapsed_h = eosPaired.elapsed_s / 3600;
+
 yyaxis left
 plot(elapsed_h, Cr_pair, '.-','color', ref_clr, 'DisplayName', 'C_{r}')
 hold on
@@ -103,9 +168,12 @@ lgd.NumColumns = 4;
 lgd.FontSize = lgdsize;
 
 yyaxis right
-plot(elapsed_h, kw_dynamic, '.:', 'Color', sample_clr, 'DisplayName', 'Calculated k_{w}')
+plot(elapsed_h, kw_dynamic, '.:', 'Color', sample_clr, 'DisplayName', 'k_{w} (Eq. 22)')
 hold on
+plot(elapsed_h, kwPO_dynamic, '.:', 'Color', POwater_clr, 'DisplayName', 'k_{w,PO} (from \partialC_w/\partialt)')
 yline(0,'LineWidth',2,'Color','k','HandleVisibility','off')
+xlim([0 20])
+ylim([-5E-4 5E-4])
 xlabel('Hours Elapsed','FontSize',lblsize)
 ylabel('k_w (m s^{-1})','FontSize',lblsize)
 ax = gca;
@@ -113,68 +181,53 @@ ax.YColor = 'k';
 grid on; box on
 ax.XMinorGrid = 'on';
 ax.XAxis.MinorTick = 'on';
-
-% % Optional save figure
-% cd(figPath)
-% exportgraphics(gcf,'dynamic_kw.png','Padding','tight')
-% savefig(gcf,'dynamic_kw.fig')
-
-% INPUT - choose indices!
-disp('Note start and stop indices for pseudo-steady state window, then press enter to continue')
-pause
 %%
+% INPUT - choose indices!
+% disp('Note start and stop indices for pseudo-steady state window, then press enter to continue')
+% pause
+
 % 2026-07-09_const-5_rep1
-ind_start_SS = 26;
-ind_stop_SS = 26;
+% ind_start_SS = 35;
+% ind_stop_SS = 35;
+
+% _const-5_rep2
+% ind_start_SS = 10;
+% ind_stop_SS = 22;
 
 % 2026-07-10_const-15_rep1
-% ind_start_SS = 14;
-% ind_stop_SS = 17;
+ind_start_SS = 16;
+ind_stop_SS = 18;
 
 % 2026-07-13_wave-10-15_rep1
-% ind_start_SS = 11;
-% ind_stop_SS = 13;
+% ind_start_SS = 9;
+% ind_stop_SS = 14;
 
+% ---2. Pseudo-Steady State Conditions-------------------------------------
+% Calculate mean concentrations
 ind = ind_start_SS:ind_stop_SS;
 
-% ---Calculate kw (m s-1) using Eq. 22-------------------------------------
 Cw_ss = mean(Cw_pair(ind));
 Cs_ss = mean(Cs_pair(ind));
 Cr_ss = mean(Cr_pair(ind));
 
-kw_ms = ka ./ ((Cw_ss - Cs_ss) ./ (Cs_ss - Cr_ss) - ka/kc); % (m s-1)
-
-% -------------------------------------------------------------------------
-% Now calculate flux and kw from Pro-Oceanus only
-% -------------------------------------------------------------------------
-dt = seconds(poPaired.datetime_local(2) - poPaired.datetime_local(1)); % TT_5min has uniform spacing by definition
-
-% Calculate flux from water-side measurements
-dCwdt = gradient(Cw_pair, dt);  % (ppm s-1); gradient function computes central differences for interior points
-fwPO_ppm = -H * dCwdt;     % (ppm m s-1)
-
-% Calculate kw over entire time series for comparison
-Ca_pair = Ca_pair;                              % (ppm); use Pro-Oceanus atmosphere
-kwPO_dynamic = fwPO_ppm ./ (Cw_pair - Ca_pair); % (m s-1)
-
-% Calculate kw during pseudo-SS window
-Ca_ss = mean(Ca_pair(ind));                % (ppm)
+% Calculate Pro-Oceanus kw during pseudo-SS window
+Ca_ss = mean(Ca_pair(ind));           % (ppm)
 fwPO_ss = mean(fwPO_ppm(ind));        % (ppm m s-1)
 kwPO_ms = fwPO_ss / (Cw_ss - Ca_ss);  % (m s-1)
 
-% -------------------------------------------------------------------------
+% Calculate Eosense kw during pseudo-SS window
+kw_ms = Sm / Sw * ka ./ ((Cw_ss - Cs_ss) ./ (Cs_ss - Cr_ss) - ka/kc); % (m s-1)
+
 % Convert kw's from m s-1 to cm h-1
-% -------------------------------------------------------------------------
 kw_cmh = kw_ms * 100 * 3600;           % (cm h-1)
 kw_PO_cmh = kwPO_ms * 100 * 3600;      % (cm h-1)
 
 txt1 = ['k_{w,EOS} (Eq. 22) = ',num2str(kw_cmh,3),' cm h^{-1}'];
 txt2 = ['k_{w,PO} = ',num2str(kw_PO_cmh,3),' cm h^{-1}'];
 
-% -------------------------------------------------------------------------
-% Plot to compare kw from eosFDs with kw from Pro-Oceanus
-% -------------------------------------------------------------------------
+% Plot Pro-Oceanus and Eosense kw's
 figure,clf
+title(expName,'Interpreter','none')
 x1_SS = elapsed_h(ind_start_SS);
 x2_SS = elapsed_h(ind_stop_SS);
 
@@ -185,7 +238,6 @@ plot(elapsed_h, Cs_pair,'.-','color',sample_clr,'DisplayName','C_{s} (corrected)
 plot(elapsed_h, Ca_pair,'-o','MarkerSize',2,'color',POair_clr,'DisplayName','C_{a,PO}')
 plot(elapsed_h, Cw_pair,'-^','MarkerSize',2,'color',POwater_clr,'DisplayName','C_{w,PO}')
 ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
-
 % Add textbox with kw values
 xt = elapsed_h(ind_start_SS);
 text(xt, 490, txt1, 'FontSize', 12)
@@ -195,10 +247,12 @@ yyaxis right
 plot(elapsed_h, kw_dynamic, '.:', 'color', sample_clr, 'DisplayName', 'k_{w} (Eq. 22)')
 hold on
 plot(elapsed_h, kwPO_dynamic, '.:', 'color', POwater_clr, 'DisplayName', 'k_{w,PO} (from \partialC_w/\partialt)')
+xlim([0 20])
+ylim([-5E-4 5E-4])
 yline(0, 'k', 'LineWidth', 2, 'HandleVisibility', 'off')
 xlabel('Hours Elapsed','FontSize',lblsize)
 ylabel('k_w (m s^{-1})','FontSize',lblsize)
-lgd = legend('show','location','northeast');
+lgd = legend('show','location','best');
 lgd.NumColumns = 5;
 lgd.FontSize = lgdsize;
 
@@ -210,16 +264,16 @@ grid on; box on
 ax.XMinorGrid = 'on';
 ax.XAxis.MinorTick = 'on';
 
+%%
 % Optional save figure
 % cd(figPath)
 % exportgraphics(gcf,'identify_pseudoSS.png','Padding','tight')
 % savefig(gcf,'identify_pseudoSS.fig')
 
 % -------------------------------------------------------------------------
-% Calculate eosFD fluxes
+% Flux Calculations
 % -------------------------------------------------------------------------
-% ---First calculate Cc(t) using Eq. 18------------------------------------
-% Define initial conditions manually
+% Calculate Cc(t) using Eq. 18
 fig = figure;clf
 plot(elapsed_h, Cs_pair, '.', 'color', sample_clr, 'DisplayName', 'C_{s}')
 hold on
@@ -245,13 +299,13 @@ else
 end
 
 % Initial conditions
-Cw0 = poPaired.Cw(ind_t0);           % (ppm); initial water concentration
+Cw0 = poPaired.water_conc(ind_t0);   % (ppm); initial water concentration
 Cs0 = eosPaired.sample_conc(ind_t0); % (ppm); initial Sample concentration
 Cr0 = eosPaired.ref_conc(ind_t0);    % (ppm); initial Reference concentration
 
 t = seconds(eosPaired.datetime_local - eosPaired.datetime_local(1)); % (s)
 
-kappa_w = Sw * kw_ms / Vc;        % (s-1); rate constant for enclosed water
+kappa_w = Sw * kw_ms / Vc;              % (s-1); rate constant for enclosed water
 tau_chamber = 1 / (kappa_w + kappa_c);  % (s); estimate of chamber time constant
 A = Ca_pair - (kappa_w*Cw0 + kappa_c*Cs0) ./ (kappa_w + kappa_c);  % (ppm); constant (Eq. 17)
 Cc = A .* exp(-(kappa_w + kappa_c) .* t) + (kappa_w .* Cw_pair + kappa_c .* Cs_pair) ./ (kappa_w + kappa_c); % (ppm)
@@ -271,22 +325,19 @@ grid on; box on
 ax = gca;
 ax.XMinorGrid = 'on';
 ax.XAxis.MinorTick = 'on';
+title(expName,'Interpreter','none')
 
 % Optional save figure
 % cd(figPath)
 % exportgraphics(gcf,'compare_Cs_Cc.png','Padding','tight')
 % savefig(gcf,'compare_Cs_Cc.fig')
 
-disp('Press enter to continue to next plot')
-pause
-
-% -------------------------------------------------------------------------
-% Calculate fc, fw, fwt and compare with PO water-inventory flux
-% -------------------------------------------------------------------------
+% disp('Press enter to continue to next plot')
+% pause
+%%
+% ---Calculate fc, fw, fwt-------------------------------------------------
 % For converting from ppm m s-1 --> umol m-2 s-1
-% Tair = TT_5min.air_T + 273.15;        % (K)
-Tair = 25 + 273.15; % NEED TO CHANGE!!!
-P_Pa = poPaired.Pa *100; % (Pa)
+P_Pa = poPaired.air_press * 100; % (Pa)
 
 % Flux through bottom membrane (Eq. 10)
 % nodes.(s).fc = kc * (Cc - Cs); % (Eq. 13)
@@ -322,6 +373,7 @@ ax.XAxis.MinorTick = 'on';
 xlabel('Hours Elapsed','FontSize',lblsize)
 ylabel('Flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
 xlim([0 18])
+title(expName,'Interpreter','none')
 
 % Optional save figure
 % cd(figPath)
@@ -343,7 +395,7 @@ pCO2_uatm = TT_5min.miniCO2_water_ppm .* P_atm; % CO2 partial pressure (uatm)
 
 % b. Compute solubility constant, K0 using Weiss, 1974
 Tw = TT_5min.water_T + 273.15; % (K)
-K0 = exp(-60.2409 + 93.4517*(100./Tw) + 23.3585*log(Tw./100));  % (mol kg-1 atm-1); S = 0
+K0 = expName(-60.2409 + 93.4517*(100./Tw) + 23.3585*log(Tw./100));  % (mol kg-1 atm-1); S = 0
 
 % c. Convert pCO2 (uatm) --> dissolved CO2 concentration (umol kg-1)
 Cw_umol_kg = K0 .* pCO2_uatm; % (umol kg-1)

@@ -1,4 +1,4 @@
-function [eosDat,poPaired] = prepSensorData_fluxpi(selPath,eosDat,poDat)
+function [eosDat, poPaired, thermDat, pulseStart] = prepFluxpiData(selPath, eosDat, poDat, thermDat, pulseStart)
 
 % Takes the processed Eosense, Pro-Oceanus Solu-Blu, and thermistor
 % datasets and:
@@ -9,36 +9,30 @@ function [eosDat,poPaired] = prepSensorData_fluxpi(selPath,eosDat,poDat)
 % Optionally saves a .mat file.
 
 % USAGE:
-%   [eosDat, poPaired] = prepSensorData_fluxpi
-%   [eosDat, poPaired] = prepSensorData_fluxpi(selPath,eosDat,poDat)
+%   [eosDat, poPaired, thermDat] = prepFluxpiData
+%   [eosDat, poPaired, thermDat] = prepFluxpiData(selPath, eosDat, poDat, thermDat)
+
+dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
 
 % Handle inputs
 if nargin < 1 || isempty(selPath)
-    start_path = 'G:\My Drive\Dal and MIT\Lab Experiments\Data\';
     dialog_title = 'Select an experiment data folder';
-    selPath = uigetdir(start_path,dialog_title);
+    selPath = uigetdir(dataRoot,dialog_title);
     if selPath == 0
         error('No folder selected.');
     end
 end
 
+if nargin < 4
+    thermDat = timetable();
+end
+
 [~, expName] = fileparts(selPath);
 filePath = fullfile(selPath, 'processed');
-
-% Load EOS data
-datFile = dir(fullfile(filePath, 'eos*'));
-[~, filename] = fileparts(datFile.name);
-load(fullfile(filePath, datFile.name));
-
-% Load PO data
-datFile = dir(fullfile(filePath, 'po*'));
-[~, filename] = fileparts(datFile.name);
-load(fullfile(filePath, datFile.name));
 
 % 1. Check and fix date offset between EOS and PO data
 d1 = dateshift(eosDat.datetime_local(1),'start','day');
 d2 = dateshift(poDat.air.datetime_local(1),'start','day');
-d3 = dateshift(poDat.water.datetime_local(1),'start','day');
 
 shiftDays = days(d1 - d2);
 
@@ -65,11 +59,15 @@ poPaired.Time = tPaired;
 poPaired.Properties.DimensionNames{1} = 'datetime_local';
 poPaired.Properties.VariableUnits = {'ppm', 'ppm', 'mbar', 'mbar'};
 
-% Option to save everything separately
-option = questdlg('Save analysis-ready data?','Save File','Yes','No','Yes');
+% 3. Option to save everything separately
+option = questdlg('Save analysis-ready EOS, PO, and THERM data sets?','Save File','Yes','No','Yes');
 switch option
     case 'Yes'
-        save(fullfile(filePath, ['allDat_',expName,'.mat']), 'eosDat', 'poPaired')
+        if isempty(thermDat)
+            save(fullfile(filePath, ['allDat_',expName,'.mat']),'eosDat','poPaired')
+        else
+            save(fullfile(filePath, ['allDat_',expName,'.mat']), 'eosDat', 'poPaired', 'thermDat', 'pulseStart')
+        end
         disp('File saved!')
     case 'No'
         disp('File not saved')

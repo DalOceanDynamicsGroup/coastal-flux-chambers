@@ -11,7 +11,7 @@ function poDat = processPO(selPath)
 % -------------------------------------------------------------------------
 % Handle inputs
 % -------------------------------------------------------------------------
-dataRoot = 'G:\My Drive\Dal and MIT\Lab Experiments\Data\';
+dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
 
 if nargin < 1 || isempty(selPath)
     dialog_title = 'Select an experiment data folder';
@@ -21,7 +21,7 @@ if nargin < 1 || isempty(selPath)
     end
 end
 
-[~, expt_name] = fileparts(selPath);
+[~, expName] = fileparts(selPath);
 rawPath1 = fullfile(selPath, 'Pro-Oceanus', 'Raw');
 rawPath2 = fullfile(selPath, 'raw');
 
@@ -204,11 +204,12 @@ plot(poDat.water.datetime_local,poDat.water.mean_conc,'o','DisplayName','Pro-Oce
 plot(poDat.air.datetime_local,poDat.air.mean_conc,'o','DisplayName','Pro-Oceanus Air')
 legend('show')
 grid on
+title(expName,'Interpreter','none')
 
 % -------------------------------------------------------------------------
 % Option to save data
 % -------------------------------------------------------------------------
-option = questdlg('Save cleaned data?','Save File','Yes','No','Yes');
+option = questdlg('Save PO data?','Save File','Yes','No','Yes');
 switch option
     case 'Yes'
         save(fullfile(procPath, ['po_',expName,'.mat']), 'poDat')
