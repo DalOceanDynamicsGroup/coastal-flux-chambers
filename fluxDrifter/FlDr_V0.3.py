@@ -2,7 +2,7 @@
 """
 Created on Tue Jun  2 14:10:29 2026
 
-@author: DODG
+@author: R A Cheel
 """
 
 import os
@@ -25,7 +25,7 @@ print("TODO: change udev rules for perma-serial-port!")
 # User configuration
 # -----------------------
 POLLING_RATE = 1.0
-BASE_DIR = r"/home/dodg/Data/FluxChamber"
+BASE_DIR = r"/home/flux/Data/FluxChamber"
 
 # EOSENSE
 REF_ADDRESS = 1
@@ -78,7 +78,7 @@ def poll_sensor(client, slave_address):
         response = client.read_holding_registers(
             address=0,
             count=8,
-            slave=slave_address   # ✅ correct for your setup
+            device_id=slave_address   # ✅ correct for your setup
         )
 
         if response.isError():
