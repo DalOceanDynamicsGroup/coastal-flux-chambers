@@ -11,8 +11,7 @@ function eosDat = processEOSModbus(selPath,applyOffsets)
 
 % INPUTS
 %   selPath         Path to experiment folder (optional)
-%   applyOffsets    Apply EOS offset corrections if available (optional;
-%   default = true)
+%   applyOffsets    Apply EOS offset corrections if available (optional; default = true)
 
 dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
 
@@ -89,38 +88,55 @@ eosDat = eosDat(uniqueIdx, :);
 % Apply offset corrections
 if applyOffsets
     offsetFile = fullfile(dataRoot, 'Offsets', 'eosOffsets_2026-07-16.mat');
+
     if exist(offsetFile,'file')
         load(offsetFile,'eosOffsets')
         eosDat.ref_conc_corr = eosDat.ref_conc - eosOffsets.ref_avg;
         eosDat.sample_conc_corr = eosDat.sample_conc - eosOffsets.sample_avg;
+
+        % Save metadata
+        eosDat.Properties.UserData.offsetsApplied = true;
+        eosDat.Properties.UserData.offsetFile = offsetFile;
+        eosDat.Properties.UserData.eosOffsets = eosOffsets;
+
         fprintf(['Reference offset: ', num2str(eosOffsets.ref_avg,2), ' \xB1 ', num2str(eosOffsets.ref_std,1), ' ppm\n'])
         fprintf(['Sample offset: ', num2str(eosOffsets.sample_avg,2), ' \xB1 ', num2str(eosOffsets.sample_std,1), ' ppm\n'])
+   
     else
         warning('Offset file not found. No correction applied.')
     end
+
+else
+    eosDat.Properties.UserData.OffsetsApplied = false;
 end
 
 ref_clr = '#8A2BE2';
 sample_clr = '#FF00FF';
 
-figure,clf
+fig=figure;clf
 plot(eosDat.datetime_local, eosDat.ref_conc, '.', 'color', ref_clr, 'DisplayName', 'Reference eosFD')
 hold on
+% plot(eosDat.datetime_local, eosDat.ref_conc_corr, '--', 'color', ref_clr, 'DisplayName', 'Reference eosFD (corrected)')
 plot(eosDat.datetime_local, eosDat.sample_conc, '.', 'color', sample_clr, 'DisplayName', 'Sample eosFD')
+% plot(eosDat.datetime_local, eosDat.sample_conc_corr, '--', 'color', sample_clr, 'DisplayName', 'Sample eosFD (Corrected)')
 xlabel('Local Time')
 ylabel('CO_2 Concentration (ppm)')
-legend('show')
+legend('show','location','best','NumColumns',2)
 grid on
 title(expName,'Interpreter','none')
 
 % Option to save data
-option = questdlg('Save EOS data?','Save File','Yes','No','Yes');
+option = questdlg('Save EOS data and figure?','Save File','Yes','No','Yes');
+figPath = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Figures\Tank\QA_QC\EOS Processing';
 switch option
     case 'Yes'
-        save(fullfile(procPath, ['eos_',expName,'.mat']), 'eosDat')
+        save(fullfile(procPath, ['eos_',expName,'.mat']), 'eosDat', 'eosOffsets')
         disp('File saved!')
+        exportgraphics(fig, fullfile(figPath,[expName,'_EOSprocess.png']))
+        savefig(fig, fullfile(figPath,[expName,'_EOSprocess.fig']))
+        disp('Figure saved!')
     case 'No'
-        disp('File not saved')
+        disp('File and figure not saved')
 end
 
 end

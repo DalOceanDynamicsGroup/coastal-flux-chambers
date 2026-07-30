@@ -51,6 +51,9 @@ thermDat = S.thermDat;
 % -------------------------------------------------------------------------
 % Convert to elapsed hours
 % -------------------------------------------------------------------------
+if isempty(pulseStart)
+    pulseStart = eosDat.datetime_local(1);
+end
 eos_h = hours(eosDat.datetime_local - pulseStart);
 po_h = hours(poPaired.datetime_local - pulseStart);
 therm_h = hours(thermDat.Time - pulseStart);
@@ -113,7 +116,6 @@ if ~isempty(pulseStart)
     ylabel('Temperature (^oC)')
     ylim([20 30])
     
-    xlim([-1 17])
     xlabel('Time since Pulse (hours)')
     legend('show','location','best','NumColumns',3)
     grid on
@@ -122,16 +124,16 @@ if ~isempty(pulseStart)
 end
 
 % Option to save figures
-option = questdlg('Save figures?','Save Figures','Yes','No','Yes');
+option = questdlg('Save fluxpi figure?','Save Figures','Yes','No','Yes');
 figPath = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Figures\Tank';
 switch option
     case 'Yes'
-        exportgraphics(fig1,fullfile(figPath, [expName,'_full.png']))
-        savefig(fig1,fullfile(figPath, [expName,'_full.fig']))
+        exportgraphics(fig1,fullfile(figPath,['Concentration/',expName,'conc_Full.png']))
+        savefig(fig1,fullfile(figPath,['Concentration/',expName,'_conc_Full.fig']))
         
         if ~isempty(pulseStart)
-            exportgraphics(fig2,fullfile(figPath, [expName,'_pulse-aligned.png']))
-            savefig(fig2,fullfile(figPath, [expName,'_pulse-aligned.fig']))
+            exportgraphics(fig2,fullfile(figPath,['Concentration/',expName,'_conc_Pulse-aligned.png']))
+            savefig(fig2,fullfile(figPath,['Concentration/',expName,'_conc_Pulse-aligned.fig']))
         end
 
         disp('Figures saved as .png and .fig!')

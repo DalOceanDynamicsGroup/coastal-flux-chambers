@@ -31,15 +31,13 @@ end
 filePath = fullfile(selPath, 'processed');
 
 % 1. Check and fix date offset between EOS and PO data
-d1 = dateshift(eosDat.datetime_local(1),'start','day');
-d2 = dateshift(poDat.air.datetime_local(1),'start','day');
+timeOffset = eosDat.datetime_local(end) - poDat.all.datetime_local(end);
 
-shiftDays = days(d1 - d2);
-
-if abs(shiftDays) > 1
-    warning('Start-time discrepancy detected: %.1f days',shiftDays);
-    poDat.water.datetime_local = poDat.water.datetime_local + days(shiftDays);
-    poDat.air.datetime_local = poDat.air.datetime_local + days(shiftDays);
+if timeOffset ~= 0
+    warning('Start-time discrepancy detected: %.1f min\n',minutes(timeOffset));
+    poDat.all.datetime_local = poDat.all.datetime_local + timeOffset;
+    poDat.air.datetime_local = poDat.air.datetime_local + timeOffset;
+    poDat.water.datetime_local = poDat.water.datetime_local + timeOffset;
 end
 
 % 2. Build paired PO timetable
@@ -64,7 +62,7 @@ option = questdlg('Save analysis-ready EOS, PO, and THERM data sets?','Save File
 switch option
     case 'Yes'
         if isempty(thermDat)
-            save(fullfile(filePath, ['allDat_',expName,'.mat']),'eosDat','poPaired')
+            save(fullfile(filePath, ['allDat_',expName,'.mat']),'eosDat', 'poPaired', 'pulseStart')
         else
             save(fullfile(filePath, ['allDat_',expName,'.mat']), 'eosDat', 'poPaired', 'thermDat', 'pulseStart')
         end

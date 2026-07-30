@@ -197,7 +197,7 @@ poDat.water.phase = [];
 poDat.air.phase = [];
 
 % Sanity check
-figure(3),clf
+fig=figure;clf
 plot(poDat.all.datetime_local,poDat.all.conc,'.','DisplayName','All Data')
 hold on
 plot(poDat.water.datetime_local,poDat.water.mean_conc,'o','DisplayName','Pro-Oceanus Water')
@@ -209,13 +209,18 @@ title(expName,'Interpreter','none')
 % -------------------------------------------------------------------------
 % Option to save data
 % -------------------------------------------------------------------------
-option = questdlg('Save PO data?','Save File','Yes','No','Yes');
+option = questdlg('Save PO data and figure?','Save File','Yes','No','Yes');
+figPath = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Figures\Tank\QA_QC\PO Processing';
+
 switch option
     case 'Yes'
         save(fullfile(procPath, ['po_',expName,'.mat']), 'poDat')
         disp('File saved!')
+        exportgraphics(fig, fullfile(figPath,[expName,'_POprocess.png']))
+        savefig(fig, fullfile(figPath,[expName,'_POprocess.fig']))
+        disp('Figure saved!')
     case 'No'
-        disp('File not saved')
+        disp('File and figure not saved')
 end
 
 end
