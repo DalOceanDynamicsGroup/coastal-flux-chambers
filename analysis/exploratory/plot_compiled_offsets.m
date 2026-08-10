@@ -30,20 +30,25 @@ expLabel = {
     '2026-07-16_high'};
 
 % Dark colors for Sample Node out of water
-ref_dark = [138 43 226]/255;
-sample_dark = [255 0 255]/255; 
+dal_ref_dark = [138 43 226]/255;
+dal_sample_dark = [255 0 255]/255; 
+mit_ref_dark = [0 68 27]/255;
+mit_sample_dark = [65 174 118]/255;
 % Light colors for Sample Node still sealed with water
-ref_light = 0.5*ref_dark + 0.5*[1 1 1];
-sample_light = 0.5*sample_dark + 0.5*[1 1 1];
+dal_ref_light = 0.5*dal_ref_dark + 0.5*[1 1 1];
+dal_sample_light = 0.5*dal_sample_dark + 0.5*[1 1 1];
+mit_ref_light = 0.5*mit_ref_dark + 0.5*[1 1 1];
+mit_sample_light = 0.5*mit_sample_dark + 0.5*[1 1 1];
 
 POair_dark = [ 65 182 196]/255;
 
 lblsize = 18;
 lgdsize = 16;
 
-allData = table();
+allData.Dal = table();
+allData.MIT = table();
 
-% Fluxpi experiments
+% Fluxpi experiments (Dal nodes only)
 for i = 1:numel(expFolders)
 
     S = load(fullfile(dataRoot,expFolders{i},'processed',['allDat_' expFolders{i} '.mat']));
@@ -62,7 +67,7 @@ for i = 1:numel(expFolders)
 
     T.Experiment = repmat(string(expLabel{i}),height(T),1);
 
-    allData = [allData;T];
+    allData.Dal = [allData.Dal;T];
 
     % figure,clf
     % plot(eosPaired.datetime_local,eosPaired.ref_conc,'.-','color',ref_dark,'DisplayName','Reference Conc')
@@ -74,7 +79,7 @@ for i = 1:numel(expFolders)
     % pause
 end
 
-% MIT experiment
+% MIT experiment (Dal and MIT Nodes)
 expLabel = {'2026-02-13'};
 
 S = load(fullfile(dataRoot,'2026-02-13_all-offsets-open-box-long','Merged','allDat.mat'));
@@ -89,59 +94,73 @@ T = table();
 
 T.Ca = TT_5min.miniATM_air_ppm;
 
+% Add to Dal table first
 T.SampleOffset = TT_5min.dal_sample_ppm - TT_5min.miniATM_air_ppm;
 T.RefOffset = TT_5min.dal_ref_ppm - TT_5min.miniATM_air_ppm;
 
 T.Experiment = repmat(string(expLabel),height(T),1);
 
-allData = [allData;T];
-% 
-% figure,clf
-% plot(TT_5min.TIME,TT_5min.dal_ref_ppm,'.-','color',ref_dark,'DisplayName','Reference Conc')
-% hold on
-% plot(TT_5min.TIME,TT_5min.dal_sample_ppm,'.-','color',sample_dark,'DisplayName','Sample Conc')
-% plot(TT_5min.TIME,TT_5min.miniATM_air_ppm,'.-','color',POair_dark,'DisplayName','C_a')
-% ylabel('CO_2 Concentration (ppm)')
-% title(expLabel)
+allData.Dal = [allData.Dal;T];
 
+% Now add to MIT table
+T.SampleOffset = TT_5min.mit_sample_ppm - TT_5min.miniATM_air_ppm;
+T.RefOffset = TT_5min.mit_ref_ppm - TT_5min.miniATM_air_ppm;
+
+T.Experiment = repmat(string(expLabel),height(T),1);
+
+allData.MIT = [allData.MIT;T];
+
+% Plot the results
 fig1 = figure(1);clf
 hold on
-
-exps = unique(allData.Experiment);
+exps = unique(allData.Dal.Experiment);
 markers = {'d','^','o','p','s'};   % one marker per experiment
+
+% MIT Reference
+scatter(allData.MIT.Ca, ...
+    allData.MIT.RefOffset, ...
+    40, mit_ref_light, 'marker', 'd', ...
+    'LineWidth', 1.5, ...
+    'DisplayName', sprintf('%s MIT Ref',  allData.MIT.Experiment(1)));
+
+% MIT Sample
+scatter(allData.MIT.Ca, ...
+    allData.MIT.SampleOffset, ...
+    40, mit_sample_light, 'marker', 'd', ...
+    'LineWidth', 1.5, ...
+    'DisplayName', sprintf('%s MIT Sample',  allData.MIT.Experiment(1)));
 
 for i = 1:numel(exps)
 
-    idx = allData.Experiment == exps(i);
+    idx = allData.Dal.Experiment == exps(i);
     
     if i <= 3
-        ref_clr = ref_light;
-        sample_clr = sample_light;
+        dal_ref_clr = dal_ref_light;
+        dal_sample_clr = dal_sample_light;
     else
-        ref_clr = ref_dark;
-        sample_clr = sample_dark;
+        dal_ref_clr = dal_ref_dark;
+        dal_sample_clr = dal_sample_dark;
     end
 
-    % Reference
-    scatter(allData.Ca(idx), ...
-        allData.RefOffset(idx), ...
-        40, ref_clr, markers{i}, ...
+    % Dal Reference
+    scatter(allData.Dal.Ca(idx), ...
+        allData.Dal.RefOffset(idx), ...
+        40, dal_ref_clr, markers{i}, ...
         'LineWidth', 1.5, ...
         'DisplayName', sprintf('%s Ref', exps(i)));
 
-    % Sample
-    scatter(allData.Ca(idx), ...
-        allData.SampleOffset(idx), ...
-        40, sample_clr, markers{i}, ...
+    % Dal Sample
+    scatter(allData.Dal.Ca(idx), ...
+        allData.Dal.SampleOffset(idx), ...
+        40, dal_sample_clr, markers{i}, ...
         'LineWidth', 1.5, ...
         'DisplayName', sprintf('%s Sample', exps(i)));
-
 end
 
 xlabel('PO Air CO_2 (ppm)')
 ylabel('EOS − PO Offset (ppm)')
 
-legend('Location','southeast','interpreter','none','NumColumns',height(exps))
+legend('Location','southeast','interpreter','none','NumColumns',height(exps)+1)
 grid on
 box on
 

@@ -97,14 +97,15 @@ modes = {'none','PO','all'};
 smoothMode = modes{idx};
 
 % % Test smoothing parameter
+% figure
+% hold on
 % for p = [0.9 0.95 0.99]
-%     pp = csaps(po_h,Cw_pair,p);
-%     dCwdt = fnval(fnder(pp),po_h);
-%
-%     figure
-%     plot(po_h,dCwdt)
+%     pp = csaps(t_pulse_h,Cw_pair,p);
+%     dCwdt = fnval(fnder(pp),t_pulse_h);
+% 
+%     plot(t_pulse_h,dCwdt,'DisplayName',sprintf('p = %.2f',p))
 %     ylim([-50 600])
-%     title(sprintf('p = %.2f',p))
+%     legend('show')
 % end
 
 p = 0.9;            % Set smoothing parameter
@@ -136,30 +137,6 @@ switch smoothMode
         Ca_fit = fnval(pp_Ca,t_pulse_h);
         Cs_fit = fnval(pp_Cs,t_pulse_h);
         Cr_fit = fnval(pp_Cr,t_pulse_h);
-end
-
-dt = seconds(poPaired.datetime_local(2) - poPaired.datetime_local(1));
-
-switch smoothMode
-    % dCdt in (ppm s-1)
-    case 'none'
-        dCwdt = gradient(Cw_fit,dt);
-        dCadt = gradient(Ca_fit,dt);
-        dCrdt = gradient(Cr_fit,dt);
-        dCsdt = gradient(Cs_fit,dt);
-
-    case 'PO'
-        dCwdt = fnval(fnder(pp_Cw),t_pulse_h) / 3600;
-        dCadt = fnval(fnder(pp_Ca),t_pulse_h) / 3600;
-
-        dCrdt = gradient(Cr_fit,dt);
-        dCsdt = gradient(Cs_fit,dt);
-
-    case 'all'
-        dCwdt = fnval(fnder(pp_Cw),t_pulse_h) / 3600;
-        dCadt = fnval(fnder(pp_Ca),t_pulse_h) / 3600;
-        dCrdt = fnval(fnder(pp_Cr),t_pulse_h) / 3600;
-        dCsdt = fnval(fnder(pp_Cs),t_pulse_h) / 3600;
 end
 
 switch smoothMode
@@ -198,18 +175,45 @@ if smoothMode == "PO" || smoothMode == "all"
         case 'Yes'
             exportgraphics(fig1,fullfile(figPath,'Concentration/',sprintf('%s_conc_%s.png',expName,tag)),'Padding','tight')
             savefig(fig1,fullfile(figPath,'Concentration/',sprintf('%s_conc_%s.fig',expName,tag)))
-            disp('Figures saved as .png and .fig!')
+            fprintf('Figures saved as .png and .fig!\n\n')
         case 'No'
-            disp('Figures not saved')
+            fprintf('Figures not saved\n\n')
     end
 else
     % No plot if no splines applied
 end
 
 % -------------------------------------------------------------------------
+% Calculate first derivatives
+% -------------------------------------------------------------------------
+dt = seconds(poPaired.datetime_local(2) - poPaired.datetime_local(1));
+
+switch smoothMode
+    % dCdt in (ppm s-1)
+    case 'none'
+        dCwdt = gradient(Cw_fit,dt);
+        dCadt = gradient(Ca_fit,dt);
+        dCrdt = gradient(Cr_fit,dt);
+        dCsdt = gradient(Cs_fit,dt);
+
+    case 'PO'
+        dCwdt = fnval(fnder(pp_Cw),t_pulse_h) / 3600;
+        dCadt = fnval(fnder(pp_Ca),t_pulse_h) / 3600;
+
+        dCrdt = gradient(Cr_fit,dt);
+        dCsdt = gradient(Cs_fit,dt);
+
+    case 'all'
+        dCwdt = fnval(fnder(pp_Cw),t_pulse_h) / 3600;
+        dCadt = fnval(fnder(pp_Ca),t_pulse_h) / 3600;
+        dCrdt = fnval(fnder(pp_Cr),t_pulse_h) / 3600;
+        dCsdt = fnval(fnder(pp_Cs),t_pulse_h) / 3600;
+end
+
+% -------------------------------------------------------------------------
 % Calculate dynamic kw
 % -------------------------------------------------------------------------
-% Calculate Pro-Oceanus flux and kw(t)
+% Calculate Pro-Oceanus kw(t) from air-water flux
 kwPO_dynamic = (-H * dCwdt) ./ (Cw_fit - Ca_fit); % (m s-1)
 
 % Calculate Eosense kw(t) using Eq. 22
@@ -218,7 +222,6 @@ kwEOS_dynamic = Sc/Sw * ka ./ ((Cw_fit - Cs_fit) ./ (Cs_fit - Cr_fit) - ka/kc); 
 % -------------------------------------------------------------------------
 % Identify pseudo-steady state window
 % -------------------------------------------------------------------------
-% ---Method 1: Manually choose indices-------------------------------------
 % Plot kw results
 figure,clf
 yyaxis left
@@ -251,6 +254,7 @@ ax.XMinorGrid = 'on';
 ax.XAxis.MinorTick = 'on';
 title(figTitle,'interpreter','none')
 
+% ---Method 1: Manually choose indices-------------------------------------
 % disp('Note start and stop indices for pseudo-steady state window, then press enter to continue')
 % pause
 
@@ -318,7 +322,7 @@ diffValid(~valid) = Inf;
 bestStart = results.windowStart_h(idxBest);
 bestEnd = results.windowEnd_h(idxBest);
 
-fprintf('Best window: %.1f-%.1f h\n',bestStart,bestEnd);
+fprintf('Best window: %.1f-%.1f h\n\n',bestStart,bestEnd);
 
 windowStart = t_pulse_h >= bestStart;
 windowEnd = t_pulse_h <= bestEnd;
@@ -367,11 +371,11 @@ t_stop = t_pulse_h(find(idx,1,'last'));
 % 
 % figure;clf
 % yyaxis left
-% plot(t_pulse_h,dCrdt,'-','color',ref_clr,'DisplayName','dC_r/dt')
+% plot(t_pulse_h,dCrdt,'-','color',ref_dark,'DisplayName','dC_r/dt')
 % hold on
-% plot(t_pulse_h,dCsdt,'-','Color',sample_clr,'DisplayName','dC_s/dt')
-% plot(t_pulse_h,dCwdt,'-','color',POwater_clr,'DisplayName','dC_w/dt')
-% plot(t_pulse_h,dCadt,'-','color',POair_clr,'DisplayName','dC_a/dt')
+% plot(t_pulse_h,dCsdt,'-','Color',sample_dark,'DisplayName','dC_s/dt')
+% plot(t_pulse_h,dCwdt,'-','color',POwater_dark,'DisplayName','dC_w/dt')
+% plot(t_pulse_h,dCadt,'-','color',POair_dark,'DisplayName','dC_a/dt')
 % yline(0,'k','linewidth',2,'HandleVisibility','off')
 % xlim([-1 17])
 % ylim([-0.02 0.02])
@@ -380,9 +384,9 @@ t_stop = t_pulse_h(find(idx,1,'last'));
 % ylabel('dC/dt (ppm s^{-1})','FontSize',lblsize)
 % 
 % yyaxis right
-% plot(t_pulse_h,D_eos,':','color',sample_clr,'DisplayName','D_{EOS}')
+% plot(t_pulse_h,D_eos,':','color',sample_dark,'DisplayName','D_{EOS}')
 % hold on
-% plot(t_pulse_h,D_po,':','color',POwater_clr,'DisplayName','D_{PO}')
+% plot(t_pulse_h,D_po,':','color',POwater_dark,'DisplayName','D_{PO}')
 % xregion(t_start, t_stop, FaceColor='r', FaceAlpha=0.15, DisplayName='Pseudo Steady State');
 % yline(0,'k','HandleVisibility','off')
 % ylabel('k_w denominator, D','FontSize',lblsize)
@@ -457,16 +461,16 @@ grid on; box on
 ax.XMinorGrid = 'on';
 ax.XAxis.MinorTick = 'on';
 title(figTitle,'interpreter','none')
-%%
+
 % Optional save figure
 option = questdlg('Save Fig. 2?','Save Figure','Yes','No','Yes');
 switch option
     case 'Yes'
         exportgraphics(fig2,fullfile(figPath,'kw/',sprintf('%s_kw_%s.png',expName,tag)),'Padding','tight')
         savefig(fig2,fullfile(figPath,'kw/',sprintf('%s_kw_%s.fig',expName,tag)))
-        disp('Figures saved as .png and .fig!')
+        fprintf('Figures saved as .png and .fig!\n\n')
     case 'No'
-        disp('Figures not saved')
+        fprintf('Figures not saved\n\n')
 end
 
 % -------------------------------------------------------------------------
@@ -481,12 +485,10 @@ Cw0 = Cw_fit(ind_t0); % (ppm); initial water concentration
 Cs0 = Cs_fit(ind_t0); % (ppm); initial Sample concentration
 Cr0 = Cr_fit(ind_t0); % (ppm); initial Reference concentration
 
-t = seconds(eosPaired.datetime_local - eosPaired.datetime_local(1)); % (s)
-
 kappa_w = Sw * kwEOS_ms / Vc;           % (s-1); rate constant for enclosed water
 tau_chamber = 1 / (kappa_w + kappa_c);  % (s); estimate of chamber time constant
 A = Ca_fit - (kappa_w*Cw0 + kappa_c*Cs0) ./ (kappa_w + kappa_c);  % (ppm); constant (Eq. 17)
-Cc = A .* exp(-(kappa_w + kappa_c) .* t) + (kappa_w .* Cw_fit + kappa_c .* Cs_fit) ./ (kappa_w + kappa_c); % (ppm)
+Cc = A .* exp(-(kappa_w + kappa_c) .* dt) + (kappa_w .* Cw_fit + kappa_c .* Cs_fit) ./ (kappa_w + kappa_c); % (ppm)
 
 % % Plot result
 % figure,clf
@@ -507,13 +509,13 @@ Cc = A .* exp(-(kappa_w + kappa_c) .* t) + (kappa_w .* Cw_fit + kappa_c .* Cs_fi
 
 % ---2. Calculate fluxes---------------------------------------------------
 % 2a. Flux through bottom membrane, fc (Eq. 10)
-fc_ppm = Vm/Sc * (gradient(Cs_fit, dt) - gradient(Cr_fit, dt)) + ka * (Cs_fit - Cr_fit); % (ppm m s-1)
+fc_ppm = Vm/Sc*(gradient(Cs_fit,dt) - gradient(Cr_fit,dt)) + ka*(Cs_fit - Cr_fit); % (ppm m s-1)
 
 % 2b. Flux beneath chamber, fw (Eq. 19)
-fw_ppm = kwEOS_ms * (Cw_fit - Cc); % (ppm m s-1)
+fw_ppm = kwEOS_ms*(Cw_fit - Cc); % (ppm m s-1)
 
 % 2c. True flux, fwt (Eq. 24)
-fwt_ppm = kwEOS_ms * (Cw_fit - Cr_fit); % (ppm m s-1)
+fwt_ppm = kwEOS_ms*(Cw_fit - Cr_fit); % (ppm m s-1)
 
 % Convert fluxes from ppm m s-1 --> umol m-2 s-1
 P_Pa = poPaired.air_press * 100; % (Pa)
@@ -522,7 +524,7 @@ fw = fw_ppm .* P_Pa ./ (R * Tair);
 fwt = fwt_ppm .* P_Pa ./ (R * Tair);
 fwPO = (-H * dCwdt) .* P_Pa ./ (R * Tair);
 
-% Smooth fc and PO water-inventory fluxes for comparison
+% Smooth fc and PO water-inventory flux for comparison
 fwPO_smooth = smoothdata(fwPO,"movmean",5);
 fc_smooth = smoothdata(fc,"movmean",5);
 
@@ -554,12 +556,27 @@ switch option
     case 'Yes'
         exportgraphics(fig3,fullfile(figPath,'Flux/',sprintf('%s_flux_%s.png',expName,tag)),'Padding','tight')
         savefig(fig3,fullfile(figPath,'Flux/',sprintf('%s_flux_%s.fig',expName,tag)))
-        disp('Figures saved as .png and .fig!')
+        fprintf('Figures saved as .png and .fig!\n\n')
     case 'No'
-        disp('Figures not saved')
+        fprintf('Figures not saved\n\n')
 end
 
-%% Uncertainty propagation
+% -------------------------------------------------------------------------
+% Uncertainty propagation
+% -------------------------------------------------------------------------
+% Uncertainties
+% Calibration coeffs: use standard error of the mean
+sigma_ref = 4.11E-5/sqrt(6);
+sigma_sample = 5.80E-5/sqrt(3);
+sigma_ka = 0.5*sqrt(sigma_ref^2 + sigma_sample^2);
+sigma_kc = 1.45E-6/sqrt(3);
+% Concentrations: Use standard error of the pseudo-SS window means
+sigma_Cw = std(Cw_fit(idx))/sqrt(sum(idx));
+sigma_Ca = std(Ca_fit(idx))/sqrt(sum(idx));
+sigma_Cr = std(Cr_fit(idx))/sqrt(sum(idx));
+sigma_Cs = std(Cs_fit(idx))/sqrt(sum(idx));
+
+% ---1. Uncertainty in kw--------------------------------------------------
 A = Sc/Sw;
 D = (Cw_ss-Cs_ss)/(Cs_ss-Cr_ss) - ka/kc;
 
@@ -569,25 +586,14 @@ dkw_dCw = -A*ka/((Cs_ss-Cr_ss)*D^2);
 dkw_dCs = A*ka*(Cw_ss-Cr_ss)/((Cs_ss-Cr_ss)^2*D^2);
 dkw_dCr = -A*ka*(Cw_ss-Cs_ss)/((Cs_ss-Cr_ss)^2*D^2);
 
-% Uncertainties
-% Calibration coeffs: use standard error of the mean
-sigma_ref = 4.11E-5/sqrt(6);
-sigma_sample = 5.80E-5/sqrt(3);
-sigma_ka = 0.5*sqrt(sigma_ref^2 + sigma_sample^2);
-sigma_kc = 1.45E-6/sqrt(3);
-% Concentrations: Use standard error of the pseudo-SS window means
-sigma_Cw = std(Cw_fit(idx))/sqrt(sum(idx));
-sigma_Cr = std(Cr_fit(idx))/sqrt(sum(idx));
-sigma_Cs = std(Cs_fit(idx))/sqrt(sum(idx));
-
-sigma_kw = sqrt(...
+sigma_kw_ms = sqrt(...
     (dkw_dka*sigma_ka)^2 + ...
     (dkw_dkc*sigma_kc)^2 + ...
     (dkw_dCw*sigma_Cw)^2 + ...
-    (dkw_dCs*sigma_Cs)^2 + ...
-    (dkw_dCr*sigma_Cr)^2);
+    (dkw_dCr*sigma_Cr)^2) + ...
+    (dkw_dCs*sigma_Cs)^2;            % (m s-1)
 
-sigma_kw_cmh = sigma_kw*100*3600; % (cm h-1)
+sigma_kw_cmh = sigma_kw_ms*100*3600; % (cm h-1)
 
 fprintf('k_w (EOS) = %.1f +- %.1f\n\n',kwEOS_cmh,sigma_kw_cmh)
 
@@ -607,3 +613,60 @@ fprintf(['Uncertainty contributions:\n',...
     '  C_s : %.1f%%\n',...
     '  C_r : %.1f%%\n'], ...
     pct(1), pct(2), pct(3), pct(4), pct(5))
+%%
+% ---2. Uncertainty in flux------------------------------------------------
+dfwt_dkw = (Cw_ss - Ca_ss);
+dfwt_dCw = kwEOS_ms;
+dfwt_dCa = -kwEOS_ms;
+
+sigma_fwt_ppm = sqrt(...
+    (dfwt_dkw*sigma_kw_ms)^2 + ...
+    (dfwt_dCw*sigma_Cw)^2 + ...
+    (dfwt_dCa*sigma_Ca)^2);       % (ppm m s-1)
+
+P_Pa_ss = mean(P_Pa(idx));
+Tair_ss = mean(Tair(idx));
+sigma_fwt_umol = sigma_fwt_ppm .* P_Pa_ss ./ (R * Tair_ss); % (umol m-2 s-1)
+
+%%
+delta_fwt = abs(fwt - fwPO);
+
+fig4 = figure(4); clf
+yline(0,'k','LineWidth',2,'HandleVisibility','off')
+hold on
+plot(t_pulse_h, delta_fwt, '-', 'Color', 'r', 'DisplayName', '$|f_{w}^\dagger - f_{w,PO}|$')
+hold on
+yline(sigma_fwt_umol, '--', 'LineWidth', 2, 'DisplayName' , '$\sigma_{f_w^\dagger}$')
+lgd = legend('show','location','north','interpreter','latex','FontSize',lgdsize);
+xlim([-1 17])
+grid on; box on
+ax = gca;
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+xlabel('Time Since Pulse (h)','FontSize',lblsize)
+ylabel('\Delta flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
+title(figTitle,'interpreter','none')
+%%
+fig5 = figure(5); clf
+yline(0,'k','LineWidth',2,'HandleVisibility','off')
+hold on
+% Raw fluxes
+plot(t_pulse_h, fc*Sc/Sw, '-', 'Color', sample_dark, 'DisplayName', '$S_c/S_w f_c$')
+hold on
+% yline(sigma_fwt_umol, '--', 'LineWidth', 2, 'DisplayName' , '$\sigma_{f_w^\dagger}$')
+plot(t_pulse_h, fw, '--', 'Color', sample_dark, 'DisplayName', '$f_{w}$')
+lgd = legend('show','location','north','interpreter','latex','FontSize',lgdsize);
+xlim([-1 17])
+grid on; box on
+ax = gca;
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+xlabel('Time Since Pulse (h)','FontSize',lblsize)
+ylabel('\Delta flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
+title(figTitle,'interpreter','none')
+
+
+% plot(t_pulse_h, fc, '-', 'Color', sample_dark, 'DisplayName', '$f_{c}$ (Eq. 10)')
+% plot(t_pulse_h, fw, '--', 'Color', sample_dark, 'DisplayName', '$f_{w}$ (Eq. 19)')
+% plot(t_pulse_h, fwt, '-.', 'Color', sample_dark, 'DisplayName', '$f_{w}^\dagger$ (Eq. 24)')
+% plot(t_pulse_h, fwPO, '-', 'Color', POwater_dark, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$')

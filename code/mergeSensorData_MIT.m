@@ -69,13 +69,13 @@ eosDat = table2timetable(eosDat);
 mitDat = mitDat(:,["pCO2","pH","TEMP1","TEMP2","REFPCO2","REFTEMP","SAMPLEPCO2","SAMPLETEMP","OceanusPCO2","CALCULATEDFLUX"]);
 mitDat = addvars(mitDat,mit_samplecorr_ppm,mit_refcorr_ppm);
 
-% TT_sync = synchronize(mitDat, proDat.water, proDat.air, eosDat, 'union', 'nearest');
-TT_sync = synchronize(mitDat, proDat.water, proDat.air, eosDat, 'union', 'linear');
+% TT_sync = synchronize(mitDat, proDat.water, poDat.air, eosDat, 'union', 'nearest');
+TT_sync = synchronize(mitDat, poDat.water, poDat.air, eosDat, 'union', 'linear');
 
 % Rearrange variables
 TT_sync = TT_sync(:,{'pCO2','OceanusPCO2','TEMP1','TEMP2','pH',...
     'REFPCO2','mit_refcorr_ppm','SAMPLEPCO2','mit_samplecorr_ppm','REFTEMP','SAMPLETEMP','CALCULATEDFLUX'...
-    'mean_conc_ppm_2','mean_conc_ppm_3','mean_P_mbar_2','mean_P_mbar_3'...
+    'mean_conc_2','mean_conc_3','mean_P_2','mean_P_3'...
     'conc_1','dal_refcorr_ppm','conc_2','dal_samplecorr_ppm','T_ref','T_sample','flux_sample'});
 
 TT_5min = retime(TT_sync,'regular','mean','TimeStep',minutes(5));
@@ -88,7 +88,7 @@ TT_5min.Properties.VariableNames = {'turner_ppm','miniCO2_water_ppm','air_T','wa
 option = questdlg('Save merged data?','Save File','Yes','No','Yes');
 switch option
     case 'Yes'
-        cd([selpath,'\Merged - test'])
+        cd([selpath,'\Merged'])
         save('allDat.mat','TT_5min')
         disp('File saved!')
     case 'No'

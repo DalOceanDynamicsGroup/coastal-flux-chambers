@@ -203,7 +203,7 @@ While Sect. \ref{sec:orig} summarizes the theoretical framework and equations as
 \end{figure}
 
 \subsection{Non-Steady State Conditions}
-Assuming that a continuous dynamic equilibrium exists between the water and atmosphere, the air-water CO$_2$ flux rate beneath the Sample chamber ($f_w$) can be derived by considering the mass balance within the 1) Sample Node measuring chamber, 2) Reference Node measuring chamber, and 3) Sample Node collar.
+Assuming that a continuous dynamic equilibrium exists between the water and atmosphere, the air--water CO$_2$ flux rate beneath the Sample chamber ($f_w$) can be derived by considering the mass balance within the 1) Sample Node measuring chamber, 2) Reference Node measuring chamber, and 3) Sample Node collar.
 
 Note: In this section, all concentrations and fluxes ($C_a, C_s$, $f_a$, $f_c$, etc.) are functions of time (i.e., $C_a(t), C_s(t)$, $f_a(t)$, $f_c(t)$, etc.), but the explicit $t$-dependence is omitted for readability. Time dependence is made explicit again when solving the ODE for $C_c(t)$ (Eq. \ref{eq:16}).
 
@@ -333,7 +333,7 @@ This assumption yields a simplified expression for the CO$_2$ concentration in t
 	\left\{
 	\begin{aligned}
 		(\ref{eq:10}): f_c &= k_a\,(C_s - C_a) \\
-		(\ref{eq:13}): f_c &= k_c\,(C_c - C_s)                 \\
+		(\ref{eq:13}): f_c &= k_c\,(C_c - C_s)  \\
 	\end{aligned}
 	\right.
 	\;\Longrightarrow\;
@@ -438,6 +438,120 @@ But in steady state, $C_a = C_r$; therefore,
 	f_s = k_a(C_s - C_r)
 \end{equation*}
 which is identical to Eq. \ref{eq:2}, hence $G = k_a$; i.e., their calibration coefficient is equivalent to the side-membrane gas transfer velocity.
+
+\subsection{Uncertainty Analysis}
+The total measurement error contains systematic (aka ``bias") errors and random (aka ``precision") errors \parencite{figliola2019}. The systematic errors bias the sample mean from the true value by a fixed amount, while the random errors cause a distribution of measured values around the sample mean. 
+
+Each individual measurement error interacts with other errors to affect the overall uncertainty---this is known as uncertainty propagation. Individual errors can be combined via the root-sum-squares (RSS) method:
+\begin{equation} \label{eq:28}
+	\begin{aligned}
+	u_x &= \sqrt{u_1^2 + u_2^2 + ... + u_k^2} \\
+		&= \sqrt{\sum_{k=1}^K u_k^2}
+\end{aligned}
+\end{equation}
+where $u_k$ is the uncertainty of elements $k = 1, 2,..., K$.
+
+\subsubsection{Systematic Error}
+We account for the systematic error by determining the mean offsets between the eosFD Reference and Sample and Pro-Oceanus air-side CO$_2$ concentration measurements during offset tests ($\overline{C_r - C_a}$ and $\overline{C_s - C_a}$, respectively), and correcting subsequent data sets with these values before proceeding with the $k_w$ and flux analysis.
+
+\subsubsection{Random Error}
+For the random error, which arises from multiple variables---the calibration coefficients ($k_a, k_c$) and the measured concentrations ($C_w, C_s, C_r$)---we can determine the overall contribution of individual errors by propagating uncertainty through Eq. \ref{eq:22}:
+\begin{equation} \label{eq:29}
+	\sigma_{k_w}^2 = 
+	\left(\frac{\partial k_w}{\partial k_a}\sigma_{k_a}\right)^2 + \left(\frac{\partial k_w}{\partial k_c}\sigma_{k_c}\right)^2 +
+	\left(\frac{\partial k_w}{\partial C_w}\sigma_{C_w}\right)^2 +
+	\left(\frac{\partial k_w}{\partial C_r}\sigma_{C_r}\right)^2 +
+	\left(\frac{\partial k_w}{\partial C_s}\sigma_{C_s}\right)^2
+\end{equation}
+
+Determining $\sigma_{f_w^\dagger}$ requires differentiating Eq. \ref{eq:22} with respect to each parameter. First, simplify notation and define
+\begin{equation}
+	\left\{
+	\begin{aligned}
+		A &= S_c/S_w\\
+		D &= \frac{C_w - C_s}{C_s - C_r} - \frac{k_a}{k_c}\\
+		  &= B - \frac{k_a}{k_c}\\
+			\end{aligned}
+		\right.
+		\;\Longrightarrow\;
+		k_w = A \frac{k_a}{D} \quad 
+\end{equation}
+
+Using these simplifications, we take derivatives with respect to $k_a$ and $k_c$:
+
+i) 
+\begin{equation*}
+	\begin{aligned}
+	\frac{\partial k_w}{\partial k_a}
+	&= \frac{AD + A\frac{k_a}{k_c}}{D^2}\\ 
+	&= \frac{A(B-\frac{k_a}{k_c}) + A\frac{k_a}{k_c}}{D^2} = \frac{A B}{D^2}\\
+	&= \frac{A \frac{C_w - C_s}{C_s - C_r}}{D^2}
+	\end{aligned}
+\end{equation*}
+
+ii)
+\begin{equation*}
+	\begin{aligned}
+	\frac{\partial k_w}{\partial k_c} 
+	&= \frac{-\frac{k_a}{k_c^2} A k_a}{D^2}\\
+	&= -A \frac{k_a^2}{k_c^2 D^2}
+	\end{aligned}
+\end{equation*}
+
+For the concentration derivatives (with respect to $C_w, C_s$, and $C_r$):
+
+iii)
+\begin{equation*}
+	\begin{aligned}
+	\frac{\partial k_w}{\partial C_w} 
+	&= \frac{-\frac{\partial D}{\partial C_w}Ak_a}{D^2}\\
+	&= -\frac{Ak_a}{(C_s - C_r)D^2}
+	\end{aligned}
+\end{equation*}
+
+iv)
+\begin{equation*}
+	\begin{aligned}
+		\frac{\partial k_w}{\partial C_s} 
+		&= \frac{-\frac{\partial D}{\partial C_s}Ak_a}{D^2}\\
+		&= \frac{Ak_a(C_w-C_r)}{(C_s-C_r)^2 D^2}
+	\end{aligned}
+\end{equation*}
+
+v) 
+\begin{equation*}
+	\frac{\partial k_w}{\partial C_r} 
+		= \frac{-Ak_a(C_w-C_s)}{(C_s-C_r)^2D^2}
+\end{equation*}
+
+Then, $\sigma_{k_w} = \sqrt{(i)^2 + (ii)^2 + (iii)^2 + (iv)^2 + (v)^2}$.
+
+Having calculated the uncertainty in $k_w$, we can now estimate the uncertainty in the true flux, $f_w^\dagger$ by similarly propagating uncertainty through Eq. \ref{eq:24}:
+\begin{equation*}
+		\sigma_{f_w^\dagger}^2 
+		= \left(\frac{\partial f_w^\dagger}{\partial_w}\sigma_{k_w}\right)^2
+		+ \left(\frac{\partial f_w^\dagger}{\partial C_w}\sigma_{C_w}\right)^2
+		+ \left(\frac{\partial f_w^\dagger}{\partial C_a}\sigma_{C_a}\right)^2
+\end{equation*}
+\begin{equation*}
+	\rightarrow \sigma_{f_w^\dagger} = \sqrt{((C_w-C_a)\sigma_{k_w})^2 + (k_w\sigma_{C_w})^2 + (k_w\sigma_{C_a})^2} m 
+\end{equation*}
+
+\subsection{Flux comparison}
+In the flux analysis, we calculate four different fluxes: the flux through the bottom membrane $f_c$ (Eq. \ref{eq:10}), the air--water flux beneath the chamber $f_w$ (Eq. \ref{eq:19}), the ``true" air--water flux $f_w^\dagger$ (Eq.\ref{eq:24}), and an independent estimate of the true air--water flux from the water inventory $f_{w,PO} = -h \frac{dC_w}{dt}$. The fluxes that should agree are:
+
+1. $f_w^{\dagger}$ and $f_{w,PO}$ \\
+Both are intended to estimate the true air--water flux. Therefore, during pseudo-steady state, we should see
+\begin{equation*}
+	f_w^{\dagger} \approx f_{w,PO}
+\end{equation*}
+
+2. $f_c$ and $f_w$ \\
+These are connected by the collar mass balance (Eq. \ref{eq:11}).
+In steady state, $S_w f_w \approx S_c f_c \rightarrow f_w \approx \frac{S_c}{S_w} f_c$. Therefore,
+\begin{equation*}
+	f_w \approx 0.4095 f_c
+\end{equation*}
 
 \printbibliography
 
