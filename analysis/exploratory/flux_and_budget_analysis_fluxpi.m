@@ -42,8 +42,8 @@ R = 8.314;                       % (J mol-1 K-1)
 
 % ---Define plotting conventions-------------------------------------------
 concMin = 400;
-concMax = 1100; % 1100, 1500
-fluxMin = -0.7; % -0.7, -1.5
+concMax = 1500; % 1100, 1500
+fluxMin = -1.5; % -0.7, -1.5
 fluxMax = 0.2; % 0.1, 0.2
 
 sample_dark = [255 0 255]/255; 
@@ -329,82 +329,83 @@ windowEnd = t_pulse_h <= bestEnd;
 idx = windowStart & windowEnd;
 t_start = t_pulse_h(find(idx,1,'first'));
 t_stop = t_pulse_h(find(idx,1,'last'));
+%%
+% % ---Method 3: Choose window based on thresholds---------------------------
+D_eos = (Cw_fit-Cs_fit)./(Cs_fit-Cr_fit) - ka/kc;
+D_po = Cw_fit - Ca_fit;
 
-% ---Method 3: Choose window based on thresholds---------------------------
-% D_eos = (Cw_fit-Cs_fit)./(Cs_fit-Cr_fit) - ka/kc;
-% D_po = Cw_fit - Ca_fit;
-% 
-% gradient_threshold = 0.015; % (ppm s-1)
-% D_po_threshold = 50;        % (ppm)
-% D_eos_threshold = 10;       % (ppm)
-% 
-% mask = ...
-%     abs(dCwdt) < gradient_threshold & ...
-%     abs(dCadt) < gradient_threshold & ...
-%     abs(dCsdt) < gradient_threshold & ...
-%     abs(dCrdt) < gradient_threshold & ...
-%     abs(D_po) > D_po_threshold & ...
-%     abs(D_eos) > D_eos_threshold;
-% 
-% idx = find(mask);
-% t_start = t_pulse_h(idx(1));
-% t_stop = t_pulse_h(idx(end));
-% 
-% % Calculate steady-state means
-% Ca_ss = mean(Ca_fit(idx));   % (ppm)
-% Cw_ss = mean(Cw_fit(idx));
-% Cs_ss = mean(Cs_fit(idx));
-% Cr_ss = mean(Cr_fit(idx));
-% dCwdt_ss = mean(dCwdt(idx)); % (ppm s-1)
-% 
-% % Steady-state PO kw
-% kwPO_ms = (-H * dCwdt_ss) / (Cw_ss - Ca_ss); % (m s-1)
-% kwPO_cmh = kwPO_ms * 100 * 3600;             % (cm h-1)
-% 
-% % Steady-state EOS kw
-% kwEOS_ms = Sc / Sw * ka ./ ((Cw_ss - Cs_ss) ./ (Cs_ss - Cr_ss) - ka/kc);  % (m s-1)
-% kwEOS_cmh = kwEOS_ms * 100 * 3600;                                        % (cm h-1)
-% 
-% % Create text box with kw values
-% txt1 = ['k_{w,EOS} (Eq. 22) = ',num2str(kwEOS_cmh,3),' cm h^{-1}'];
-% txt2 = ['k_{w,PO} = ',num2str(kwPO_cmh,3),' cm h^{-1}'];
-% 
-% figure;clf
-% yyaxis left
-% plot(t_pulse_h,dCrdt,'-','color',ref_dark,'DisplayName','dC_r/dt')
-% hold on
-% plot(t_pulse_h,dCsdt,'-','Color',sample_dark,'DisplayName','dC_s/dt')
-% plot(t_pulse_h,dCwdt,'-','color',POwater_dark,'DisplayName','dC_w/dt')
-% plot(t_pulse_h,dCadt,'-','color',POair_dark,'DisplayName','dC_a/dt')
-% yline(0,'k','linewidth',2,'HandleVisibility','off')
-% xlim([-1 17])
+gradient_threshold = 0.04; % (ppm s-1)
+D_po_threshold = 100;        % (ppm)
+D_eos_threshold = 10;       % (ppm)
+
+mask = ...
+    abs(dCwdt) < gradient_threshold & ...
+    abs(dCadt) < gradient_threshold & ...
+    abs(dCsdt) < gradient_threshold & ...
+    abs(dCrdt) < gradient_threshold & ...
+    abs(D_po) > D_po_threshold & ...
+    abs(D_eos) > D_eos_threshold;
+
+idx = find(mask);
+t_start = t_pulse_h(idx(1));
+t_stop = t_pulse_h(idx(end));
+
+% Calculate steady-state means
+Ca_ss = mean(Ca_fit(idx));   % (ppm)
+Cw_ss = mean(Cw_fit(idx));
+Cs_ss = mean(Cs_fit(idx));
+Cr_ss = mean(Cr_fit(idx));
+dCwdt_ss = mean(dCwdt(idx)); % (ppm s-1)
+
+% Steady-state PO kw
+kwPO_ms = (-H * dCwdt_ss) / (Cw_ss - Ca_ss); % (m s-1)
+kwPO_cmh = kwPO_ms * 100 * 3600;             % (cm h-1)
+
+% Steady-state EOS kw
+kwEOS_ms = Sc / Sw * ka ./ ((Cw_ss - Cs_ss) ./ (Cs_ss - Cr_ss) - ka/kc);  % (m s-1)
+kwEOS_cmh = kwEOS_ms * 100 * 3600;                                        % (cm h-1)
+
+% Create text box with kw values
+txt1 = ['k_{w,EOS} (Eq. 22) = ',num2str(kwEOS_cmh,3),' cm h^{-1}'];
+txt2 = ['k_{w,PO} = ',num2str(kwPO_cmh,3),' cm h^{-1}'];
+
+figure;clf
+yyaxis left
+plot(t_pulse_h,dCrdt,'-','color',ref_dark,'DisplayName','dC_r/dt')
+hold on
+plot(t_pulse_h,dCsdt,'-','Color',sample_dark,'DisplayName','dC_s/dt')
+plot(t_pulse_h,dCwdt,'-','color',POwater_dark,'DisplayName','dC_w/dt')
+plot(t_pulse_h,dCadt,'-','color',POair_dark,'DisplayName','dC_a/dt')
+yline(0,'k','LineWidth',2,'HandleVisibility','off')
+xlim([-1 17])
 % ylim([-0.02 0.02])
-% ax = gca;
-% ax.YColor = 'k';
-% ylabel('dC/dt (ppm s^{-1})','FontSize',lblsize)
-% 
-% yyaxis right
-% plot(t_pulse_h,D_eos,':','color',sample_dark,'DisplayName','D_{EOS}')
-% hold on
-% plot(t_pulse_h,D_po,':','color',POwater_dark,'DisplayName','D_{PO}')
-% xregion(t_start, t_stop, FaceColor='r', FaceAlpha=0.15, DisplayName='Pseudo Steady State');
-% yline(0,'k','HandleVisibility','off')
-% ylabel('k_w denominator, D','FontSize',lblsize)
-% xlabel('Time (h)','FontSize',lblsize)
-% % Add textbox with kw values
-% text(t_start, -60, txt1, 'FontSize', 12)
-% text(t_start, -70, txt2, 'FontSize', 12)
-% ylim([-100 200])
-% grid on
-% ax = gca;
-% ax.YColor = 'k';
-% grid on; box on
-% ax.XMinorGrid = 'on';
-% ax.XAxis.MinorTick = 'on';
-% lgd = legend('show','location','southeast','NumColumns',4);
-% lgd.FontSize = lgdsize;
-% title(figTitle,'interpreter','none')
+ylim([-0.05 0.5])
+ax = gca;
+ax.YColor = 'k';
+ylabel('dC/dt (ppm s^{-1})','FontSize',lblsize)
 
+yyaxis right
+plot(t_pulse_h,D_eos,':','color',sample_dark,'DisplayName','D_{EOS}')
+hold on
+plot(t_pulse_h,D_po,':','color',POwater_dark,'DisplayName','D_{PO}')
+xregion(t_start, t_stop, FaceColor='r', FaceAlpha=0.15, DisplayName='Pseudo Steady State');
+yline(0,':k','LineWidth',2,'HandleVisibility','off')
+ylabel('k_w denominator, D','FontSize',lblsize)
+xlabel('Time (h)','FontSize',lblsize)
+% Add textbox with kw values
+text(t_start, -60, txt1, 'FontSize', 12)
+text(t_start, -70, txt2, 'FontSize', 12)
+ylim([-100 200])
+grid on
+ax = gca;
+ax.YColor = 'k';
+grid on; box on
+ax.XMinorGrid = 'on';
+ax.XAxis.MinorTick = 'on';
+lgd = legend('show','location','southeast','NumColumns',4);
+lgd.FontSize = lgdsize;
+title(figTitle,'interpreter','none')
+%%
 % -------------------------------------------------------------------------
 % Calculate pseudo-SS kw
 % -------------------------------------------------------------------------
@@ -477,6 +478,7 @@ end
 % Calculate fluxes
 % -------------------------------------------------------------------------
 % ---1. Calculate time-varying collar concentration, Cc(t) (Eq. 18)--------
+t = seconds(eosPaired.datetime_local - eosPaired.datetime_local(1));
 % Initial conditions
 diff_vec = abs(eosPaired.datetime_local - pulseStart);
 idx0 = find(diff_vec == min(abs(diff_vec)));
@@ -488,7 +490,7 @@ Cr0 = Cr_fit(ind_t0); % (ppm); initial Reference concentration
 kappa_w = Sw * kwEOS_ms / Vc;           % (s-1); rate constant for enclosed water
 tau_chamber = 1 / (kappa_w + kappa_c);  % (s); estimate of chamber time constant
 A = Ca_fit - (kappa_w*Cw0 + kappa_c*Cs0) ./ (kappa_w + kappa_c);  % (ppm); constant (Eq. 17)
-Cc = A .* exp(-(kappa_w + kappa_c) .* dt) + (kappa_w .* Cw_fit + kappa_c .* Cs_fit) ./ (kappa_w + kappa_c); % (ppm)
+Cc = A .* exp(-(kappa_w + kappa_c) .* t) + (kappa_w .* Cw_fit + kappa_c .* Cs_fit) ./ (kappa_w + kappa_c); % (ppm)
 
 % % Plot result
 % figure,clf
@@ -595,7 +597,7 @@ sigma_kw_ms = sqrt(...
 
 sigma_kw_cmh = sigma_kw_ms*100*3600; % (cm h-1)
 
-fprintf('k_w (EOS) = %.1f +- %.1f\n\n',kwEOS_cmh,sigma_kw_cmh)
+fprintf('k_w (EOS) = %.1f +- %.1 cm h^-1f\n\n',kwEOS_cmh,sigma_kw_cmh)
 
 term_ka = (dkw_dka*sigma_ka)^2;
 term_kc = (dkw_dkc*sigma_kc)^2;
@@ -613,7 +615,7 @@ fprintf(['Uncertainty contributions:\n',...
     '  C_s : %.1f%%\n',...
     '  C_r : %.1f%%\n'], ...
     pct(1), pct(2), pct(3), pct(4), pct(5))
-%%
+
 % ---2. Uncertainty in flux------------------------------------------------
 dfwt_dkw = (Cw_ss - Ca_ss);
 dfwt_dCw = kwEOS_ms;
@@ -628,7 +630,8 @@ P_Pa_ss = mean(P_Pa(idx));
 Tair_ss = mean(Tair(idx));
 sigma_fwt_umol = sigma_fwt_ppm .* P_Pa_ss ./ (R * Tair_ss); % (umol m-2 s-1)
 
-%%
+fprintf('True flux uncertainty (EOS) = %.3f μmol m^-2 s^-1 \n\n',sigma_fwt_umol)
+
 delta_fwt = abs(fwt - fwPO);
 
 fig4 = figure(4); clf
@@ -646,27 +649,42 @@ ax.XAxis.MinorTick = 'on';
 xlabel('Time Since Pulse (h)','FontSize',lblsize)
 ylabel('\Delta flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
 title(figTitle,'interpreter','none')
-%%
+
+% Optional save figure
+option = questdlg('Save Fig. 4?','Save Figure','Yes','No','Yes');
+switch option
+    case 'Yes'
+        exportgraphics(fig4,fullfile(figPath,'Flux/',sprintf('%s_compare-true-flux_%s.png',expName,tag)),'Padding','tight')
+        savefig(fig4,fullfile(figPath,'Flux/',sprintf('%s_compare-true-flux_%s.fig',expName,tag)))
+        fprintf('Figures saved as .png and .fig!\n\n')
+    case 'No'
+        fprintf('Figures not saved\n\n')
+end
+
 fig5 = figure(5); clf
 yline(0,'k','LineWidth',2,'HandleVisibility','off')
 hold on
-% Raw fluxes
-plot(t_pulse_h, fc*Sc/Sw, '-', 'Color', sample_dark, 'DisplayName', '$S_c/S_w f_c$')
+plot(t_pulse_h, Sc/Sw*fc, '-', 'Color', sample_dark, 'DisplayName', '$(S_c/S_w) f_c$')
 hold on
-% yline(sigma_fwt_umol, '--', 'LineWidth', 2, 'DisplayName' , '$\sigma_{f_w^\dagger}$')
 plot(t_pulse_h, fw, '--', 'Color', sample_dark, 'DisplayName', '$f_{w}$')
-lgd = legend('show','location','north','interpreter','latex','FontSize',lgdsize);
+lgd = legend('show','location','south','interpreter','latex','FontSize',lgdsize);
 xlim([-1 17])
+ylim([fluxMin fluxMax])
 grid on; box on
 ax = gca;
 ax.XMinorGrid = 'on';
 ax.XAxis.MinorTick = 'on';
 xlabel('Time Since Pulse (h)','FontSize',lblsize)
-ylabel('\Delta flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
+ylabel('Flux (\mumol m^{-2} s^{-1})','FontSize',lblsize)
 title(figTitle,'interpreter','none')
 
-
-% plot(t_pulse_h, fc, '-', 'Color', sample_dark, 'DisplayName', '$f_{c}$ (Eq. 10)')
-% plot(t_pulse_h, fw, '--', 'Color', sample_dark, 'DisplayName', '$f_{w}$ (Eq. 19)')
-% plot(t_pulse_h, fwt, '-.', 'Color', sample_dark, 'DisplayName', '$f_{w}^\dagger$ (Eq. 24)')
-% plot(t_pulse_h, fwPO, '-', 'Color', POwater_dark, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$')
+% Optional save figure
+option = questdlg('Save Fig. 5?','Save Figure','Yes','No','Yes');
+switch option
+    case 'Yes'
+        exportgraphics(fig5,fullfile(figPath,'Flux/',sprintf('%s_compare-chamber-flux_%s.png',expName,tag)),'Padding','tight')
+        savefig(fig5,fullfile(figPath,'Flux/',sprintf('%s_compare-chamber-flux_%s.fig',expName,tag)))
+        fprintf('Figures saved as .png and .fig!\n\n')
+    case 'No'
+        fprintf('Figures not saved\n\n')
+end
