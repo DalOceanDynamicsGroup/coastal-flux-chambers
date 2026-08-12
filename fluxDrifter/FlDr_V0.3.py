@@ -313,7 +313,7 @@ def main():
                     timestampTHERM = get_Timestamp()
 
                     # Format the custom string for both temperatures on one line
-                    therm_line = f"{temp_a:.2f},{temp_b:.2f}"
+                    therm_line = f"water, {temp_a:.2f}, air, {temp_b:.2f}"
 
                     # -----------------------
                     # PRINT
