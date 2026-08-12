@@ -24,6 +24,12 @@ slprj/
 # Data
 data/raw/
 
+# Sensors/Loggers
+sensors/data/
+sensors/*.png
+sensors/*.xls
+sensors/*.xlsx
+
 # OS / Editor
 .DS_Store
 Thumbs.db

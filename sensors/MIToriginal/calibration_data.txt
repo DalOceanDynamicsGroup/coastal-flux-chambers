@@ -1,0 +1,1 @@
+pH Sts Phionics #25011215calibration date: 2025-10-23Slope: 0.9187, Intercept: -3.9824pCO2 Turner C-Sense #24100219calibration date: 2024-07-31Slope: 200.9, Intercept: -2.4621Reference eosFD Node #FN20230623calibration date: 0000-00-00Slope: 0.0128, Intercept: 5.3 Sample eosFD Node #FN20230634calibration date: 0000-00-00Slope: 0.0128, Intercept: -36.5 
