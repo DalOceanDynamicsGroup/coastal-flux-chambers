@@ -219,7 +219,7 @@ def main():
             spi = busio.SPI(board.SCK, board.MOSI, board.MISO)
 
             # Assign Chip Select Pins (GPIO 8 and GPIO 7)
-            cs_a = digitalio.DigitalInOut(board.D8)
+            cs_a = digitalio.DigitalInOut(board.D25)
             cs_b = digitalio.DigitalInOut(board.D7)
 
             # Initialize the two sensor instances
