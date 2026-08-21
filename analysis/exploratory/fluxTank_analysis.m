@@ -1,10 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% flux_and_budget_analysis_fluxpi.m
+% fluxTank_analysis.m
 %
 % Analysis of air-water CO2 fluxes measured using eosFD chambers and
 % Pro-Oceanus sensors. Computes dynamic and steady-state kw, collar
-% dynamics Cc(t), eosFD fluxes (fc, fw, fwt), and compares resulting
-% budgets.
+% dynamics Cc(t), eosFD fluxes (fc, fw, fwt).
 %
 % Table and figure numbers refer to eosense_theory document.
 %
@@ -40,26 +39,11 @@ kappa_c = Sc * kc / Vc;          % (s-1); rate constant for bottom membrane
 % Universal constants
 R = 8.314;                       % (J mol-1 K-1)
 
-% ---Define plotting conventions-------------------------------------------
-concMin = 400;
-concMax = 1500; % 1100, 1500
-fluxMin = -1.5; % -0.7, -1.5
-fluxMax = 0.2; % 0.1, 0.2
-
-sample_dark = [255 0 255]/255; 
-sample_light = 0.5*sample_dark + 0.5*[1 1 1];
-ref_dark = [138 43 226]/255;
-POair_dark = [ 65 182 196]/255;
-POwater_dark = [0 0 1];
-POwater_light = 0.5*POwater_dark + 0.5*[1 1 1];
-
-lblsize = 18;
-lgdsize = 16;
-
 % ---Load analysis-ready data file-----------------------------------------
-dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
+projectRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\';
+dataPath = fullfile(projectRoot,'Lab Experiments','Data');
 dialog_title = 'Select an experiment data folder';
-selPath = uigetdir(dataRoot,dialog_title);
+selPath = uigetdir(dataPath,dialog_title);
 [~,expName] = fileparts(selPath);
 filePath = fullfile(selPath, 'processed');
 
@@ -74,11 +58,60 @@ if isempty(datFile)
 end
 eosOffsets = eosDat.Properties.UserData.eosOffsets;
 
-figPath = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Figures\Tank';
+% ---Define plotting conventions-------------------------------------------
+figPath = fullfile(projectRoot,'Lab Experiments','Figures','Wave Tank');
 
-% ---Pair EOS and THERM to PO values---------------------------------------
-eosPaired = retime(eosDat, poPaired.datetime_local, 'mean');
-thermPaired = retime(thermDat, poPaired.datetime_local, 'mean');
+pulseType = questdlg('Select pulse size:','Pulse Type','Big','Small','Big');
+switch pulseType
+    case 'Big'
+        concMin = 400;
+        concMax = 1500;
+        fluxMin = -1.5;
+        fluxMax = 0.2;
+    case 'Small'
+        concMin = 400;
+        concMax = 1100;
+        fluxMin = -0.7;
+        fluxMax = 0.2;
+end
+
+sample_dark = [255 0 255]/255; 
+sample_light = 0.5*sample_dark + 0.5*[1 1 1];
+ref_dark = [138 43 226]/255;
+ref_light = 0.5*ref_dark + 0.5*[1 1 1];
+POair_dark = [ 65 182 196]/255;
+POwater_dark = [0 0 1];
+POwater_light = 0.5*POwater_dark + 0.5*[1 1 1];
+
+lblsize = 18;
+lgdsize = 16;
+
+% -------------------------------------------------------------------------
+% Pair EOS and THERM to PO values
+% -------------------------------------------------------------------------
+% Use trailing 10-min mean (since each PO point represents end of a 10-min 
+% air or water phase) 
+poTimes = poPaired.datetime_local;
+Cr_pair = nan(size(poTimes));
+Cs_pair = nan(size(poTimes));
+air_T_pair = nan(size(poTimes));
+water_T_pair = nan(size(poTimes));
+
+for i = 1:numel(poTimes)
+    t0 = poTimes(i);
+    idx = eosDat.datetime_local >= t0 - minutes(10) & ...
+          eosDat.datetime_local <= t0;
+    Cr_pair(i) = mean(eosDat.ref_conc_corr(idx),'omitnan');
+    Cs_pair(i) = mean(eosDat.sample_conc_corr(idx),'omitnan');
+    air_T_pair(i) = mean(thermDat.air_T(idx),'omitnan');
+    water_T_pair(i) = mean(thermDat.water_T(idx),'omitnan');
+end
+
+eosPaired = timetable(poTimes,Cr_pair,Cs_pair,...
+    'VariableNames',{'ref_conc_corr','sample_conc_corr'});
+
+thermPaired = timetable(poTimes,air_T_pair,water_T_pair,...
+    'VariableNames',{'air_T','water_T'});
 
 % Use the paired EOS, THERM, and PO values in calculations
 Cr_pair = eosPaired.ref_conc_corr;
@@ -108,7 +141,8 @@ smoothMode = modes{idx};
 %     legend('show')
 % end
 
-p = 0.9;            % Set smoothing parameter
+% p = 0.9;            % Set smoothing parameter for splines
+p = 0.99;
 
 switch smoothMode
     case 'none'
@@ -123,6 +157,13 @@ switch smoothMode
 
         Cw_fit = fnval(pp_Cw,t_pulse_h);
         Ca_fit = fnval(pp_Ca,t_pulse_h);
+
+        % HERE
+        % Cw_fit = movmean(Cw_pair,5);
+        % Ca_fit = movmean(Ca_pair,5);
+        % 
+        % Cw_fit = sgolayfilt(Cw_pair,3,15);
+        % Ca_fit = sgolayfilt(Ca_pair,3,15);
 
         Cs_fit = Cs_pair;
         Cr_fit = Cr_pair;
@@ -154,6 +195,7 @@ end
 % Compare original data with splines
 if smoothMode == "PO" || smoothMode == "all"
     fig1 = figure(1);clf
+    figure,clf;
     plot(t_pulse_h,Cr_pair,'.','Color',ref_dark,'DisplayName','C_r')
     hold on
     plot(t_pulse_h,Cs_pair,'.','Color',sample_dark,'DisplayName','C_s')
@@ -168,7 +210,8 @@ if smoothMode == "PO" || smoothMode == "all"
     ylabel('Concentration (ppm)')
     xlabel('Elapsed Hours')
     grid on;box on
-    title(figTitle,'interpreter','none')
+    % title(figTitle,'interpreter','none')
+    title([figTitle,' -- sgolayfilt'],'interpreter','none')
 
     option = questdlg('Save Fig. 1?','Save Figure','Yes','No','Yes');
     switch option
@@ -199,6 +242,10 @@ switch smoothMode
     case 'PO'
         dCwdt = fnval(fnder(pp_Cw),t_pulse_h) / 3600;
         dCadt = fnval(fnder(pp_Ca),t_pulse_h) / 3600;
+        
+        % HERE
+        % dCwdt = gradient(Cw_fit,dt);
+        % dCadt = gradient(Ca_fit,dt);
 
         dCrdt = gradient(Cr_fit,dt);
         dCsdt = gradient(Cs_fit,dt);
@@ -222,39 +269,39 @@ kwEOS_dynamic = Sc/Sw * ka ./ ((Cw_fit - Cs_fit) ./ (Cs_fit - Cr_fit) - ka/kc); 
 % -------------------------------------------------------------------------
 % Identify pseudo-steady state window
 % -------------------------------------------------------------------------
-% Plot kw results
-figure,clf
-yyaxis left
-plot(t_pulse_h, Cr_fit, '-', 'color', ref_dark, 'DisplayName', 'C_{r}')
-hold on
-plot(t_pulse_h, Cs_fit, '-', 'color', sample_dark, 'DisplayName', 'C_{s}')
-plot(t_pulse_h, Ca_fit, '-', 'MarkerSize', 2, 'color', POair_dark, 'DisplayName', 'C_{a}')
-plot(t_pulse_h, Cw_fit, '-', 'MarkerSize', 2, 'color', POwater_dark, 'DisplayName', 'C_{w}')
-ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
-ylim([concMin concMax])
-ax = gca;
-ax.YColor = 'k';
-lgd = legend('show','location','southeast');
-lgd.NumColumns = 4;
-lgd.FontSize = lgdsize;
-
-yyaxis right
-plot(t_pulse_h, kwEOS_dynamic, ':', 'Color', sample_light, 'DisplayName', 'k_{w} (Eq. 22)')
-hold on
-plot(t_pulse_h, kwPO_dynamic, ':', 'Color', POwater_light, 'DisplayName', 'k_{w,PO} (from \partialC_w/\partialt)')
-yline(0,'LineWidth',2,'Color','k','HandleVisibility','off')
-xlim([-1 17])
-ylim([-1E-4 1E-4])
-xlabel('Time Since Pulse (h)','FontSize',lblsize)
-ylabel('k_w (m s^{-1})','FontSize',lblsize)
-ax = gca;
-ax.YColor = 'k';
-grid on; box on
-ax.XMinorGrid = 'on';
-ax.XAxis.MinorTick = 'on';
-title(figTitle,'interpreter','none')
-
 % ---Method 1: Manually choose indices-------------------------------------
+% Plot kw results
+% figure,clf
+% yyaxis left
+% plot(t_pulse_h, Cr_fit, '-', 'color', ref_dark, 'DisplayName', 'C_{r} (corrected)')
+% hold on
+% plot(t_pulse_h, Cs_fit, '-', 'color', sample_dark, 'DisplayName', 'C_{s} (corrected)')
+% plot(t_pulse_h, Ca_fit, '-', 'MarkerSize', 2, 'color', POair_dark, 'DisplayName', 'C_{a}')
+% plot(t_pulse_h, Cw_fit, '-', 'MarkerSize', 2, 'color', POwater_dark, 'DisplayName', 'C_{w}')
+% ylabel('CO_2 Concentration (ppm)','FontSize',lblsize)
+% ylim([concMin concMax])
+% ax = gca;
+% ax.YColor = 'k';
+% lgd = legend('show','location','southeast');
+% lgd.NumColumns = 4;
+% lgd.FontSize = lgdsize;
+% 
+% yyaxis right
+% plot(t_pulse_h, kwEOS_dynamic, ':', 'Color', sample_light, 'DisplayName', 'k_{w} (Eq. 22)')
+% hold on
+% plot(t_pulse_h, kwPO_dynamic, ':', 'Color', POwater_light, 'DisplayName', 'k_{w,PO} (from \partialC_w/\partialt)')
+% yline(0,'LineWidth',2,'Color','k','HandleVisibility','off')
+% xlim([-1 17])
+% ylim([-1E-4 1E-4])
+% xlabel('Time Since Pulse (h)','FontSize',lblsize)
+% ylabel('k_w (m s^{-1})','FontSize',lblsize)
+% ax = gca;
+% ax.YColor = 'k';
+% grid on; box on
+% ax.XMinorGrid = 'on';
+% ax.XAxis.MinorTick = 'on';
+% title(figTitle,'interpreter','none')
+
 % disp('Note start and stop indices for pseudo-steady state window, then press enter to continue')
 % pause
 
@@ -329,83 +376,83 @@ windowEnd = t_pulse_h <= bestEnd;
 idx = windowStart & windowEnd;
 t_start = t_pulse_h(find(idx,1,'first'));
 t_stop = t_pulse_h(find(idx,1,'last'));
-%%
+
 % % ---Method 3: Choose window based on thresholds---------------------------
-D_eos = (Cw_fit-Cs_fit)./(Cs_fit-Cr_fit) - ka/kc;
-D_po = Cw_fit - Ca_fit;
+% D_eos = (Cw_fit-Cs_fit)./(Cs_fit-Cr_fit) - ka/kc;
+% D_po = Cw_fit - Ca_fit;
+% 
+% gradient_threshold = 0.04; % (ppm s-1)
+% D_po_threshold = 100;        % (ppm)
+% D_eos_threshold = 10;       % (ppm)
+% 
+% mask = ...
+%     abs(dCwdt) < gradient_threshold & ...
+%     abs(dCadt) < gradient_threshold & ...
+%     abs(dCsdt) < gradient_threshold & ...
+%     abs(dCrdt) < gradient_threshold & ...
+%     abs(D_po) > D_po_threshold & ...
+%     abs(D_eos) > D_eos_threshold;
+% 
+% idx = find(mask);
+% t_start = t_pulse_h(idx(1));
+% t_stop = t_pulse_h(idx(end));
+% 
+% % Calculate steady-state means
+% Ca_ss = mean(Ca_fit(idx));   % (ppm)
+% Cw_ss = mean(Cw_fit(idx));
+% Cs_ss = mean(Cs_fit(idx));
+% Cr_ss = mean(Cr_fit(idx));
+% dCwdt_ss = mean(dCwdt(idx)); % (ppm s-1)
+% 
+% % Steady-state PO kw
+% kwPO_ms = (-H * dCwdt_ss) / (Cw_ss - Ca_ss); % (m s-1)
+% kwPO_cmh = kwPO_ms * 100 * 3600;             % (cm h-1)
+% 
+% % Steady-state EOS kw
+% kwEOS_ms = Sc / Sw * ka ./ ((Cw_ss - Cs_ss) ./ (Cs_ss - Cr_ss) - ka/kc);  % (m s-1)
+% kwEOS_cmh = kwEOS_ms * 100 * 3600;                                        % (cm h-1)
+% 
+% % Create text box with kw values
+% txt1 = ['k_{w,EOS} (Eq. 22) = ',num2str(kwEOS_cmh,3),' cm h^{-1}'];
+% txt2 = ['k_{w,PO} = ',num2str(kwPO_cmh,3),' cm h^{-1}'];
+% 
+% figure;clf
+% yyaxis left
+% plot(t_pulse_h,dCrdt,'-','color',ref_dark,'DisplayName','dC_r/dt')
+% hold on
+% plot(t_pulse_h,dCsdt,'-','Color',sample_dark,'DisplayName','dC_s/dt')
+% plot(t_pulse_h,dCwdt,'-','color',POwater_dark,'DisplayName','dC_w/dt')
+% plot(t_pulse_h,dCadt,'-','color',POair_dark,'DisplayName','dC_a/dt')
+% yline(0,'k','LineWidth',2,'HandleVisibility','off')
+% xlim([-1 17])
+% % ylim([-0.02 0.02])
+% ylim([-0.05 0.5])
+% ax = gca;
+% ax.YColor = 'k';
+% ylabel('dC/dt (ppm s^{-1})','FontSize',lblsize)
+% 
+% yyaxis right
+% plot(t_pulse_h,D_eos,':','color',sample_dark,'DisplayName','D_{EOS}')
+% hold on
+% plot(t_pulse_h,D_po,':','color',POwater_dark,'DisplayName','D_{PO}')
+% xregion(t_start, t_stop, FaceColor='r', FaceAlpha=0.15, DisplayName='Pseudo Steady State');
+% yline(0,':k','LineWidth',2,'HandleVisibility','off')
+% ylabel('k_w denominator, D','FontSize',lblsize)
+% xlabel('Time (h)','FontSize',lblsize)
+% % Add textbox with kw values
+% text(t_start, -60, txt1, 'FontSize', 12)
+% text(t_start, -70, txt2, 'FontSize', 12)
+% ylim([-100 200])
+% grid on
+% ax = gca;
+% ax.YColor = 'k';
+% grid on; box on
+% ax.XMinorGrid = 'on';
+% ax.XAxis.MinorTick = 'on';
+% lgd = legend('show','location','southeast','NumColumns',4);
+% lgd.FontSize = lgdsize;
+% title(figTitle,'interpreter','none')
 
-gradient_threshold = 0.04; % (ppm s-1)
-D_po_threshold = 100;        % (ppm)
-D_eos_threshold = 10;       % (ppm)
-
-mask = ...
-    abs(dCwdt) < gradient_threshold & ...
-    abs(dCadt) < gradient_threshold & ...
-    abs(dCsdt) < gradient_threshold & ...
-    abs(dCrdt) < gradient_threshold & ...
-    abs(D_po) > D_po_threshold & ...
-    abs(D_eos) > D_eos_threshold;
-
-idx = find(mask);
-t_start = t_pulse_h(idx(1));
-t_stop = t_pulse_h(idx(end));
-
-% Calculate steady-state means
-Ca_ss = mean(Ca_fit(idx));   % (ppm)
-Cw_ss = mean(Cw_fit(idx));
-Cs_ss = mean(Cs_fit(idx));
-Cr_ss = mean(Cr_fit(idx));
-dCwdt_ss = mean(dCwdt(idx)); % (ppm s-1)
-
-% Steady-state PO kw
-kwPO_ms = (-H * dCwdt_ss) / (Cw_ss - Ca_ss); % (m s-1)
-kwPO_cmh = kwPO_ms * 100 * 3600;             % (cm h-1)
-
-% Steady-state EOS kw
-kwEOS_ms = Sc / Sw * ka ./ ((Cw_ss - Cs_ss) ./ (Cs_ss - Cr_ss) - ka/kc);  % (m s-1)
-kwEOS_cmh = kwEOS_ms * 100 * 3600;                                        % (cm h-1)
-
-% Create text box with kw values
-txt1 = ['k_{w,EOS} (Eq. 22) = ',num2str(kwEOS_cmh,3),' cm h^{-1}'];
-txt2 = ['k_{w,PO} = ',num2str(kwPO_cmh,3),' cm h^{-1}'];
-
-figure;clf
-yyaxis left
-plot(t_pulse_h,dCrdt,'-','color',ref_dark,'DisplayName','dC_r/dt')
-hold on
-plot(t_pulse_h,dCsdt,'-','Color',sample_dark,'DisplayName','dC_s/dt')
-plot(t_pulse_h,dCwdt,'-','color',POwater_dark,'DisplayName','dC_w/dt')
-plot(t_pulse_h,dCadt,'-','color',POair_dark,'DisplayName','dC_a/dt')
-yline(0,'k','LineWidth',2,'HandleVisibility','off')
-xlim([-1 17])
-% ylim([-0.02 0.02])
-ylim([-0.05 0.5])
-ax = gca;
-ax.YColor = 'k';
-ylabel('dC/dt (ppm s^{-1})','FontSize',lblsize)
-
-yyaxis right
-plot(t_pulse_h,D_eos,':','color',sample_dark,'DisplayName','D_{EOS}')
-hold on
-plot(t_pulse_h,D_po,':','color',POwater_dark,'DisplayName','D_{PO}')
-xregion(t_start, t_stop, FaceColor='r', FaceAlpha=0.15, DisplayName='Pseudo Steady State');
-yline(0,':k','LineWidth',2,'HandleVisibility','off')
-ylabel('k_w denominator, D','FontSize',lblsize)
-xlabel('Time (h)','FontSize',lblsize)
-% Add textbox with kw values
-text(t_start, -60, txt1, 'FontSize', 12)
-text(t_start, -70, txt2, 'FontSize', 12)
-ylim([-100 200])
-grid on
-ax = gca;
-ax.YColor = 'k';
-grid on; box on
-ax.XMinorGrid = 'on';
-ax.XAxis.MinorTick = 'on';
-lgd = legend('show','location','southeast','NumColumns',4);
-lgd.FontSize = lgdsize;
-title(figTitle,'interpreter','none')
-%%
 % -------------------------------------------------------------------------
 % Calculate pseudo-SS kw
 % -------------------------------------------------------------------------
@@ -431,7 +478,7 @@ txt2 = ['k_{w,PO} = ',num2str(kwPO_cmh,3),' cm h^{-1}'];
 % Plot Pro-Oceanus and Eosense kw's
 fig2 = figure(2);clf
 yyaxis left
-plot(t_pulse_h, Cr_fit,'-','color',ref_dark,'DisplayName','C_{r}')
+plot(t_pulse_h, Cr_fit,'-','color',ref_dark,'DisplayName','C_{r} (corrected)')
 hold on
 plot(t_pulse_h, Cs_fit,'-','color',sample_dark,'DisplayName','C_{s} (corrected)')
 plot(t_pulse_h, Ca_fit,'-','MarkerSize',2,'color',POair_dark,'DisplayName','C_{a,PO}')
@@ -478,9 +525,9 @@ end
 % Calculate fluxes
 % -------------------------------------------------------------------------
 % ---1. Calculate time-varying collar concentration, Cc(t) (Eq. 18)--------
-t = seconds(eosPaired.datetime_local - eosPaired.datetime_local(1));
+t = seconds(eosPaired.poTimes - eosPaired.poTimes(1));
 % Initial conditions
-diff_vec = abs(eosPaired.datetime_local - pulseStart);
+diff_vec = abs(eosPaired.poTimes - pulseStart);
 idx0 = find(diff_vec == min(abs(diff_vec)));
 ind_t0 = idx0 - 1;
 Cw0 = Cw_fit(ind_t0); % (ppm); initial water concentration
@@ -526,10 +573,7 @@ fw = fw_ppm .* P_Pa ./ (R * Tair);
 fwt = fwt_ppm .* P_Pa ./ (R * Tair);
 fwPO = (-H * dCwdt) .* P_Pa ./ (R * Tair);
 
-% Smooth fc and PO water-inventory flux for comparison
-fwPO_smooth = smoothdata(fwPO,"movmean",5);
-fc_smooth = smoothdata(fc,"movmean",5);
-
+% Plot all fluxes together
 fig3 = figure(3); clf
 yline(0,'k','LineWidth',2,'HandleVisibility','off')
 hold on
@@ -538,10 +582,7 @@ plot(t_pulse_h, fc, '-', 'Color', sample_dark, 'DisplayName', '$f_{c}$ (Eq. 10)'
 plot(t_pulse_h, fw, '--', 'Color', sample_dark, 'DisplayName', '$f_{w}$ (Eq. 19)')
 plot(t_pulse_h, fwt, '-.', 'Color', sample_dark, 'DisplayName', '$f_{w}^\dagger$ (Eq. 24)')
 plot(t_pulse_h, fwPO, '-', 'Color', POwater_dark, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$')
-% Smoothed fluxes
-plot(t_pulse_h, fc_smooth, ':', 'Color', sample_light, 'LineWidth', 1.5, 'DisplayName', '$f_{c}$ (Eq. 10) (smoothed)')
-plot(t_pulse_h, fwPO_smooth, ':', 'Color', POwater_light, 'LineWidth', 1.5, 'DisplayName', '$f_{w,PO} = -h\cdot \partial C_w / \partial t$ (smoothed)')
-lgd = legend('show','location','south','interpreter','latex','NumColumns',3,'FontSize',lgdsize);
+lgd = legend('show','location','south','interpreter','latex','NumColumns',2,'FontSize',lgdsize);
 grid on; box on
 ax = gca;
 ax.XMinorGrid = 'on';

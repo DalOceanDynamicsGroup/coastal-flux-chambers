@@ -13,9 +13,9 @@ clear; close all; clc
 % Setup
 % -------------------------------------------------------------------------
 % ---Load analysis-ready data file-----------------------------------------
-dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data';
+dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\Lab Experiments\Data';
 
-figPath = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Figures\Tank';
+figPath = 'C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\Lab Experiments\Figures\Tank';
 
 expFolders = {
     '2026-07-09_offset-test'

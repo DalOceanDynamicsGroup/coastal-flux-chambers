@@ -12,7 +12,7 @@ function [eosDat, poPaired, thermDat, pulseStart] = prepFluxpiData(selPath, eosD
 %   [eosDat, poPaired, thermDat] = prepFluxpiData
 %   [eosDat, poPaired, thermDat] = prepFluxpiData(selPath, eosDat, poDat, thermDat)
 
-dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
+dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\';
 
 % Handle inputs
 if nargin < 1 || isempty(selPath)
@@ -25,6 +25,10 @@ end
 
 if nargin < 4
     thermDat = timetable();
+end
+
+if nargin < 5
+    pulseStart = [];
 end
 
 [~, expName] = fileparts(selPath);

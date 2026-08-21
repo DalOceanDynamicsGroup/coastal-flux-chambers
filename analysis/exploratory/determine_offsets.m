@@ -14,9 +14,9 @@ clear; close all; clc
 % -------------------------------------------------------------------------
 % Load the analysis-ready data file
 % -------------------------------------------------------------------------
-dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
+projectRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\';
 dialogTitle = 'Select an experiment data folder';
-selPath = uigetdir(dataRoot,dialogTitle);
+selPath = uigetdir(projectRoot,dialogTitle);
 
 [~,expName] = fileparts(selPath);
 calDate = extractBefore(expName,"_");
@@ -25,11 +25,11 @@ eosDat = processEOSModbus(selPath,false);
 poDat = processPO(selPath);
 
 [eosDat, poPaired] = prepFluxpiData(selPath, eosDat, poDat);
-
+%%
 % -------------------------------------------------------------------------
 % Put EOS and PO air on common times
 % -------------------------------------------------------------------------
-eosPaired = retime(eosDat, poPaired.datetime_local, 'mean');
+eosPaired = retime(eosDat, poPaired.datetime_local, 'nearest');
 eos_h = hours(eosDat.datetime_local - eosDat.datetime_local(1));
 po_h = hours(poPaired.datetime_local - poPaired.datetime_local(1));
 
@@ -66,11 +66,11 @@ Tair_clr = rgb('orange');
 Twater_clr = rgb('tomato');
 
 fig1 = figure(1);clf
-plot(eos_h,eosDat.ref_conc,'.','color',ref_clr,'DisplayName','Ref - Air')
+plot(eosDat.datetime_local,eosDat.ref_conc,'.','color',ref_clr,'DisplayName','Ref - Air')
 hold on
-plot(eos_h,eosDat.sample_conc,'.','color',sample_clr,'DisplayName','Sample - Air')
-plot(po_h, poPaired.air_conc, 'o', 'markersize', 4, 'Color', POair_clr, 'DisplayName','Solu-Blu Air')
-plot(po_h, poPaired.water_conc,'^', 'markersize', 4, 'Color', POwater_clr, 'DisplayName','Solu-Blu Water')
+plot(eosDat.datetime_local,eosDat.sample_conc,'.','color',sample_clr,'DisplayName','Sample - Air')
+plot(poPaired.datetime_local, poPaired.air_conc, 'o', 'markersize', 4, 'Color', POair_clr, 'DisplayName','Solu-Blu Air')
+% plot(po_h, poPaired.water_conc,'^', 'markersize', 4, 'Color', POwater_clr, 'DisplayName','Solu-Blu Water')
 ylabel('CO_2 Concentration (ppm)')
 xlabel('Hours Elapsed')
 legend('show','location','best','NumColumns',2)
@@ -79,12 +79,12 @@ title(expName,'Interpreter','none')
 
 start_ind = find(ind == 1, 1);
 fig2 = figure(2);clf
-plot(po_h,dRef,'o-','color',ref_clr,'DisplayName','Ref - Air')
+plot(poPaired.datetime_local,dRef,'o-','color',ref_clr,'DisplayName','Ref - Air')
 hold on
-plot(po_h,dSample,'o-','color',sample_clr,'DisplayName','Sample - Air')
-line([po_h(start_ind) po_h(end)],[eosOffsets.ref_avg eosOffsets.ref_avg],'LineStyle','--','color',ref_clr,'LineWidth',2,'DisplayName','Mean(Ref - Air)')
-line([po_h(start_ind) po_h(end)],[eosOffsets.sample_avg eosOffsets.sample_avg],'LineStyle','--','color',sample_clr,'LineWidth',2,'DisplayName','Mean(Sample - Air)')
-xline(po_h(start_ind),'--k','LineWidth',2,'label','Start average','HandleVisibility','off')
+plot(poPaired.datetime_local,dSample,'o-','color',sample_clr,'DisplayName','Sample - Air')
+% line([po_h(start_ind) po_h(end)],[eosOffsets.ref_avg eosOffsets.ref_avg],'LineStyle','--','color',ref_clr,'LineWidth',2,'DisplayName','Mean(Ref - Air)')
+% line([po_h(start_ind) po_h(end)],[eosOffsets.sample_avg eosOffsets.sample_avg],'LineStyle','--','color',sample_clr,'LineWidth',2,'DisplayName','Mean(Sample - Air)')
+% xline(po_h(start_ind),'--k','LineWidth',2,'label','Start average','HandleVisibility','off')
 ylabel('Offset from PO Air (ppm)')
 xlabel('Hours Elapsed')
 legend('show','location','best','NumColumns',2)
@@ -92,8 +92,13 @@ grid on
 title(expName,'Interpreter','none')
 
 % Option to save offset data and figure
-calPath = fullfile(dataRoot, 'Offsets');
-figPath = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Figures\Tank';
+if contains(selPath,'Lab Experiments')
+    calPath = fullfile(projectRoot,'Lab Experiments','Data','Offsets');
+    figPath = fullfile(projectRoot,'Lab Experiments','Figures','Wave Tank','QA_QC');
+elseif contains(selPath,'Field Deployments')
+    calPath = fullfile(projectRoot,'Field Deployments','Data','Offsets');
+    figPath = fullfile(projectRoot,'Field Deployments','Figures','QA_QC');
+end
 
 if ~exist(calPath, 'dir')
     mkdir(calPath)

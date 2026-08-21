@@ -10,7 +10,7 @@ function eosDat = processEOSInternal(selPath)
 
 % Handle inputs
 if nargin < 1 || isempty(selPath)
-    start_path = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
+    start_path = 'C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\Lab Experiments\Data\';
     dialog_title = 'Select an experiment data folder';
     selPath = uigetdir(start_path, dialog_title);
     if selPath == 0

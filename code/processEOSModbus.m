@@ -13,12 +13,12 @@ function eosDat = processEOSModbus(selPath,applyOffsets)
 %   selPath         Path to experiment folder (optional)
 %   applyOffsets    Apply EOS offset corrections if available (optional; default = true)
 
-dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
+projectRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\';
 
 % Handle inputs
 if nargin < 1 || isempty(selPath)
     dialog_title = 'Select an experiment data folder';
-    selPath = uigetdir(dataRoot,dialog_title);
+    selPath = uigetdir(projectRoot,dialog_title);
     if selPath == 0
         error('No folder selected.')
     end
@@ -28,12 +28,18 @@ if nargin < 2
     applyOffsets = true;
 end
 
-[~, expName] = fileparts(selPath);
+[dataDir, expName] = fileparts(selPath);
 rawPath = fullfile(selPath, 'raw');
 procPath = fullfile(selPath, 'processed');
 
 if ~exist(procPath, 'dir')
     mkdir(procPath);
+end
+
+if contains(selPath,'Lab Experiments')
+    figPath = fullfile(projectRoot,'Lab Experiments','Figures','Wave Tank','QA_QC');
+elseif contains(selPath,'Field Deployments')
+    figPath = fullfile(projectRoot,'Field Deployments','Figures','QA_QC');
 end
 
 % Locate raw data files
@@ -85,9 +91,29 @@ eosDat.Properties.VariableUnits = {'s','ppm','degC','ppm','degC'};
 [~, uniqueIdx] = unique(eosDat.datetime_local);
 eosDat = eosDat(uniqueIdx, :);
 
-% Apply offset corrections
+% Apply offset corrections 
 if applyOffsets
-    offsetFile = fullfile(dataRoot, 'Offsets', 'eosOffsets_2026-07-16.mat');
+    % Determine whether lab or field experiment
+    if contains(selPath,'Lab Experiments')
+        offsetDir = fullfile(projectRoot,'Lab Experiments','Data','Offsets');
+    elseif contains(selPath,'Field Deployments')
+        offsetDir = fullfile(projectRoot,'Field Deployments','Data','Offsets');
+    else
+        error('Could not determine lab vs. field deployment')
+    end
+    
+    % Look for an experiment-specific offset file
+    offsetFiles = dir(fullfile(offsetDir,['*',expName,'*.mat']));
+
+    if ~isempty(offsetFiles)
+        offsetFile = fullfile(offsetFiles(1).folder,offsetFiles(1).name);
+        fprintf('Using experiment-specific offset file:\n%s\n',offsetFiles(1).name)
+    else
+        % Legacy fallback
+        offsetFile = fullfile(projectRoot,'Lab Experiments','Data','Offsets','eosOffsets_2026-07-16.mat');
+        warning(['No experiment-specific offset file found for "',expName,...
+            '". Using legacy offset file "eosOffsets_2026-07-16.mat".'])
+    end
 
     if exist(offsetFile,'file')
         load(offsetFile,'eosOffsets')
@@ -99,8 +125,8 @@ if applyOffsets
         eosDat.Properties.UserData.offsetFile = offsetFile;
         eosDat.Properties.UserData.eosOffsets = eosOffsets;
 
-        fprintf(['Reference offset: ', num2str(eosOffsets.ref_avg,2), ' \xB1 ', num2str(eosOffsets.ref_std,1), ' ppm\n'])
-        fprintf(['Sample offset: ', num2str(eosOffsets.sample_avg,2), ' \xB1 ', num2str(eosOffsets.sample_std,1), ' ppm\n'])
+        fprintf(['Reference offset: ', num2str(eosOffsets.ref_avg,2), ' ± ', num2str(eosOffsets.ref_std,1), ' ppm\n'])
+        fprintf(['Sample offset: ', num2str(eosOffsets.sample_avg,2), ' ± ', num2str(eosOffsets.sample_std,1), ' ppm\n'])
    
     else
         warning('Offset file not found. No correction applied.')
@@ -116,9 +142,13 @@ sample_clr = '#FF00FF';
 fig=figure;clf
 plot(eosDat.datetime_local, eosDat.ref_conc, '.', 'color', ref_clr, 'DisplayName', 'Reference eosFD')
 hold on
-% plot(eosDat.datetime_local, eosDat.ref_conc_corr, '--', 'color', ref_clr, 'DisplayName', 'Reference eosFD (corrected)')
 plot(eosDat.datetime_local, eosDat.sample_conc, '.', 'color', sample_clr, 'DisplayName', 'Sample eosFD')
-% plot(eosDat.datetime_local, eosDat.sample_conc_corr, '--', 'color', sample_clr, 'DisplayName', 'Sample eosFD (Corrected)')
+if applyOffsets
+    plot(eosDat.datetime_local, eosDat.ref_conc_corr, '--', 'color', ref_clr, 'DisplayName', 'Reference eosFD (corrected)')
+    plot(eosDat.datetime_local, eosDat.sample_conc_corr, '--', 'color', sample_clr, 'DisplayName', 'Sample eosFD (Corrected)')
+else
+    % Do not plot non-existent corrected values for offset datasets
+end
 xlabel('Local Time')
 ylabel('CO_2 Concentration (ppm)')
 legend('show','location','best','NumColumns',2)
@@ -127,10 +157,13 @@ title(expName,'Interpreter','none')
 
 % Option to save data
 option = questdlg('Save EOS data and figure?','Save File','Yes','No','Yes');
-figPath = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Figures\Tank\QA_QC\EOS Processing';
 switch option
     case 'Yes'
-        save(fullfile(procPath, ['eos_',expName,'.mat']), 'eosDat', 'eosOffsets')
+        if applyOffsets
+            save(fullfile(procPath, ['eos_',expName,'.mat']), 'eosDat', 'eosOffsets')
+        else
+            save(fullfile(procPath, ['eos_',expName,'.mat']), 'eosDat')
+        end
         disp('File saved!')
         exportgraphics(fig, fullfile(figPath,[expName,'_EOSprocess.png']))
         savefig(fig, fullfile(figPath,[expName,'_EOSprocess.fig']))

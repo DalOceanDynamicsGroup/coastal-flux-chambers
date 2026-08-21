@@ -1,7 +1,7 @@
 clear;close all;clc
 
 % Load MIT data file
-cd('G:\My Drive\Dal and MIT\Lab Experiments\Data\MIT')
+cd('C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\Lab Experiments\Data')
 [filename,pathname] = uigetfile('*.csv','Select a CSV file');
 
 dat = readtable(filename);

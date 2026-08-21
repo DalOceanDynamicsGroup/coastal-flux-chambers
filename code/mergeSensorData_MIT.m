@@ -11,7 +11,7 @@ function TT_5min = mergeSensorData_MIT(selpath)
 
 % Handle inputs
 if nargin < 1 || isempty(selpath)
-    start_path = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
+    start_path = 'C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\Lab Experiments\Data\';
     dialog_title = 'Select an experiment data folder';
     selpath = uigetdir(start_path,dialog_title);
     if selpath == 0

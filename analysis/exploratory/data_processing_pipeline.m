@@ -1,7 +1,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % data_processing_pipeline.m
 % This script runs all the functions/scripts to process raw sensor data 
-% from the fluxpi tank setup and outputs and plots merged datasets for 
+% from the fluxTank DAQ and outputs and plots merged datasets for 
 % further analysis.
 %
 % AUTHOR: Emily Chua
@@ -21,9 +21,9 @@ addpath(genpath('C:\Users\Emily\Documents\GitHub\coastal-flux-chambers'))
 %==========================================================================
 % Interactively select the experiment folder
 %==========================================================================
-dataRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Google Drive Migration\Dal and MIT\Lab Experiments\Data\';
+projectRoot = 'C:\Users\Emily\OneDrive - Dalhousie University\Work\Dal and MIT\';
 dialog_title = 'Select an experiment data folder';
-selPath = uigetdir(dataRoot,dialog_title);
+selPath = uigetdir(projectRoot,dialog_title);
 if selPath == 0
     error('No folder selected.');
 end
@@ -52,10 +52,16 @@ thermDat = processTHERM(selPath);
 %==========================================================================
 % Prepare datasets for analysis
 %==========================================================================
-% Prompt user for pulse start
-expDate = extractBefore(expName,'_');
-answer = inputdlg('Enter pulse start time (HH:mm:ss):', 'Pulse Time', 1);
-pulseStart = datetime(expDate + " " + answer{1}, 'InputFormat', 'yyyy-MM-dd HH:mm:ss', 'TimeZone', 'America/Halifax');
+isField = contains(selPath,'Field Deployments');
+
+if isField
+    pulseStart = [];
+else
+    % Prompt user for pulse start
+    expDate = extractBefore(expName,'_');
+    answer = inputdlg('Enter pulse start time (HH:mm:ss):', 'Pulse Time', 1);
+    pulseStart = datetime(expDate + " " + answer{1}, 'InputFormat', 'yyyy-MM-dd HH:mm:ss', 'TimeZone', 'America/Halifax');
+end
 
 [eosDat, poPaired, thermDat, pulseStart] = prepFluxpiData(selPath, eosDat, poDat, thermDat, pulseStart);
 
@@ -67,4 +73,4 @@ plotFluxpiData(selPath,pulseStart);
 % %==========================================================================
 % % Compute fluxes and kw
 % %==========================================================================
-% run('flux_and_budget_analysis_fluxpi')
+% run('fluxTank_analysis')
