@@ -13,6 +13,20 @@ This repository contains documentation related to flux chamber development, alon
 
 ## Data Acquisition
 
+## Operation
+- join the wireless network on the drifter (currently ShopPrinter)
+- activate the python environment: `source /home/flux/.venv/bin/activate`
+- `cd pythoncode`
+### For flux chambers, Solu-Blu, and thermisters
+- run the code `python FlDr_V0.3.py`
+  - if wanting to run the program(s) after disconnecting a laptop use `screen`:
+    - to run the logging code `screen python FlDr_V0.3.py`
+    - while running `ctrl + a, d` to leave process running and get back to terminal, at this point you can disconnect from the raspberrypi and the logging process will continue
+    - to reconnect to the logging process `screen -r`
+    - to list all the currently "screened" processes `screen -list`
+### For Accelerometer, Magnetometer, and Gyroscope
+- Not complete yet
+
 ### MIToriginal
 Code provided to us by MIT collaborators. This used an esp32 to record "ancillary" sensors along with eosSens (modbus)
 
@@ -22,14 +36,7 @@ Developing code for the flux chamber, which as a Solu-Blue CO2 sensor (rs-232/48
 ### fluxDrifter
 This is essentially a fork of the code for the flux chamber. The biggest difference is that there is no arduino, just a raspberry pi to log all the data.
 
-### To run python on reboot
-- create service file `sudo nano /etc/systemd/system/fluxchamber.service`
-- reload services list `sudo systemctl daemon-reload`
-- start logging script service `sudo systemctl start fluxchamber.service`
-- check status `sudo systemctl status fluxchamber.service`
-- realtime status `sudo journalctl -u fluxchamber.service -f`
-- stop `sudo systemctl stop fluxchamber.service`
-- restart manually `sudo systemctl restart fluxchamber.service`
+**flux/flux**
 
 ### Notes
 - Raspberry Pi SPI primary bus (SPI0) is 19 (MOSI), 21 (MISO), 23 (SCLK) and for chip select 8 (CS0) and 7 (CS1)
@@ -53,5 +60,13 @@ Basic, "no software" method is to grep for the unique line identifiers:
   - `scp -r dodg@fluxpi:/path/to/data/dataFileName .`
 - winscp can also be used, graphical interface to the file system
 
+### To run python on reboot (this is out of date and unused)
+- create service file `sudo nano /etc/systemd/system/fluxchamber.service`
+- reload services list `sudo systemctl daemon-reload`
+- start logging script service `sudo systemctl start fluxchamber.service`
+- check status `sudo systemctl status fluxchamber.service`
+- realtime status `sudo journalctl -u fluxchamber.service -f`
+- stop `sudo systemctl stop fluxchamber.service`
+- restart manually `sudo systemctl restart fluxchamber.service`
 
 

@@ -36,6 +36,9 @@ BAUDRATE = 19200
 # SOLU-BLU
 PO_PORT = '/dev/ttyUSB0'
 PO_BAUD = 19200
+SB_POWER_PIN = digitalio.DigitalInOut(board.D24)
+SB_POWER_PIN.direction = digitalio.Direction.OUTPUT
+SB_POWER_PIN.value = False # OFF
 
 # -----------------------
 # MAX31865 Configuration
@@ -105,6 +108,9 @@ def poll_sensor(client, slave_address):
 def start_solu_blu(ser):
     try:
         print("Starting Solu-Blu sampling...")
+        SB_POWER_PIN.value = True # OFF
+        print("Waiting for Solu-Blu to boot...")
+        time.sleep(5)
 
         # Clear out any old data lingering in the Pi's buffers
         ser.reset_input_buffer()
@@ -356,15 +362,22 @@ def main():
 
     except KeyboardInterrupt:
         print("Logging stopped manually")
+        SB_POWER_PIN.value = False # OFF
+        SB_POWER_PIN.deinit()
 
     except Exception as e:
         print("Fatal error in main execution loop:", e)
+        SB_POWER_PIN.value = False # OFF
+        SB_POWER_PIN.deinit()
         
     finally:
         if client:
             client.close()
         if ser_PO:
             ser_PO.close()
+        
+        SB_POWER_PIN.value = False # OFF
+        SB_POWER_PIN.deinit()
 
 if __name__ == "__main__":
     main()
