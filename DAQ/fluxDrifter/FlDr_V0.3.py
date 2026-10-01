@@ -27,11 +27,17 @@ print("TODO: change udev rules for perma-serial-port!")
 POLLING_RATE = 1.0
 BASE_DIR = r"/home/flux/Data/FluxChamber"
 
-# EOSENSE
+# EOSENSE (dal)
 REF_ADDRESS = 1
 NOD_ADDRESS = 2
 MODBUS_PORT = '/dev/ttyUSB1'
 BAUDRATE = 19200
+
+# #EOSENSE (MIT)
+# REF_ADDR_MIT = 3
+# NOD_ADDR_MIT = 4
+# MODBUS_PORT_MIT = '/dev/ttyUSB2'
+# #BAUDRATE = 19200
 
 # SOLU-BLU
 PO_PORT = '/dev/ttyUSB0'
@@ -184,7 +190,7 @@ def main():
     ser_PO = None
     
     try:
-        # --- Modbus client ---
+        # --- Modbus client (dal) ---
         try:
             client = ModbusClient(
                 port=MODBUS_PORT,
@@ -195,11 +201,28 @@ def main():
                 timeout=1
             )
             if not client.connect():
-                print("Warning: Failed to connect to eosFD Modbus client")
+                print("Warning: Failed to connect to eosFD Modbus (dal)  client")
             else:
-                print("Connected to eosFD")
+                print("Connected to eosFD (dal)")
         except Exception as e:
-            print("Error initializing Modbus client:", e)
+            print("Error initializing dal Modbus client:", e)
+
+        # # --- Modbus client (MIT) ---
+        # try:
+        #     client_MIT = ModbusClient(
+        #         port=MODBUS_PORT_MIT,
+        #         baudrate=BAUDRATE,
+        #         parity='N',
+        #         stopbits=2,
+        #         bytesize=8,
+        #         timeout=1
+        #     )
+        #     if not client_MIT.connect():
+        #         print("Warning: Failed to connect to eosFD Modbus (MIT) client")
+        #     else:
+        #         print("Connected to eosFD (MIT)")
+        # except Exception as e:
+        #     print("Error initializing MIT Modbus client:", e)
 
         # --- Solu-Blu serial ---
         try:
@@ -270,7 +293,7 @@ def main():
                     elapsed = time.time() - start_time
 
                     # -----------------------
-                    # EOSENSE
+                    # EOSENSE (dal)
                     # -----------------------
                     ref_pCO2, ref_temp = 0.0, 0.0
                     nod_pCO2, nod_temp = 0.0, 0.0
@@ -283,6 +306,21 @@ def main():
                             ref_pCO2, ref_temp = ref
                         if node is not None:
                             nod_pCO2, nod_temp = node
+
+                    # # -----------------------
+                    # # EOSENSE (MIT)
+                    # # -----------------------
+                    # ref_pCO2_MIT, ref_temp_MIT = 0.0, 0.0
+                    # nod_pCO2_MIT, nod_temp_MIT = 0.0, 0.0
+                    
+                    # if client and client.connected:
+                    #     ref_MIT = poll_sensor(client_MIT, REF_ADDRESS)
+                    #     node_MIT = poll_sensor(client_MIT, NOD_ADDRESS)
+
+                    #     if ref_MIT is not None:
+                    #         ref_pCO2_MIT, ref_temp_MIT = ref_MIT
+                    #     if node_MIT is not None:
+                    #         nod_pCO2_MIT, nod_temp_MIT = node_MIT
 
                     # -----------------------
                     # SOLU-BLU
